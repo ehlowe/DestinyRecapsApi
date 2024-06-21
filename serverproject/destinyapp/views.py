@@ -168,6 +168,7 @@ async def auto_recaps_generator(request):
     else:
         yt_ids=["QZqGqsDlFrQ"]
         yt_ids=["hAf0iOS-2V4"]
+        yt_ids=["CXFDaEbl9UI"]
     print("YT IDS TO RUN:",yt_ids)
 
     # initialize the discord recaps to send
@@ -190,7 +191,10 @@ async def auto_recaps_generator(request):
         print("YT ID:",yt_id)
         try:
             transcript_data=await saf.grab_transcript_data(yt_id)
-            if (not transcript_data) or (skip_transcript):
+            live_bool=await saf.get_live_status(yt_id)
+            if live_bool:
+                print("Live Video Not Supported, Skipping")
+            if ((not transcript_data) or (skip_transcript)) and (not live_bool):
                 if not skip_transcript:
                     # Download Video
                     output_folder="workingaudio/"+yt_id

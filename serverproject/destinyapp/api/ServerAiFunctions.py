@@ -18,6 +18,7 @@ from asgiref.sync import sync_to_async
 from moviepy.editor import AudioFileClip, concatenate_audioclips
 import yt_dlp
 import copy
+from pytube import YouTube
 
 
 # import from base directory
@@ -152,6 +153,27 @@ async def get_all_data(verbose=False):
 
 
 # # MAIN GENERATION FUNCTIONS
+# Determine if video is live
+async def get_live_status(yt_id):
+    # Get video
+    url = 'https://www.youtube.com/watch?v='+yt_id
+    yt = YouTube(url)
+
+    # Fill attributes
+    try:
+        for attr in dir(yt):
+            value=getattr(yt, attr)
+    except Exception as e:
+        pass
+
+    # Get Live status
+    try:
+        vid_info=getattr(yt, "_vid_info")
+        live_bool=vid_info["videoDetails"]["isLive"]
+    except Exception as e:
+        live_bool=False
+    return live_bool
+
 # Video Download
 async def video_download(video_id):#, output_folder, output_name):
     """Takes a video id, downloads the video from youtube, concatenates the video with a pre-recorded audio file of the target speaker
