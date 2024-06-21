@@ -1,0 +1,22 @@
+# server ignores
+/serverproject/db.sqlite3
+/serverproject/serverproject/deployment_settings.py
+/serverproject/staticfiles/admin
+/serverproject/workingaudio/merged_audio.mp3
+/serverproject/workingaudio/raw.webm
+/serverproject/chromedriver.exe
+
+# destinyapp ignores
+/serverproject/destinyapp/vector_dbs
+/serverproject/destinyapp/__pycache__
+
+# keys
+keys.json
+.env
+
+# test notebooks
+/serverproject/testingnotebooks
+
+# global ignores
+__pycache__
+
