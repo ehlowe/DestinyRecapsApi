@@ -3,6 +3,7 @@
 /serverproject/serverproject/deployment_settings.py
 /serverproject/staticfiles/admin
 /serverproject/workingaudio/merged_audio.mp3
+/serverproject/workingaudio/testing_merged_audio.mp3
 /serverproject/workingaudio/raw.webm
 /serverproject/chromedriver.exe
 

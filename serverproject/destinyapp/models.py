@@ -12,9 +12,12 @@ class TranscriptData(models.Model):
     raw_transcript_data = models.JSONField(default=dict)
 
     text_chunks = models.JSONField(default=list)
+    text_chunks_summaries = models.JSONField(default=list)
+
     summarized_chunks = models.JSONField(default=list)
 
-    meta= models.CharField(max_length=100000,default="")
+    meta= models.CharField(max_length=1000000,default="")
+    meta_markdown= models.CharField(max_length=100000,default="")
 
     # returns a string representation of the object
     def __str__(self):

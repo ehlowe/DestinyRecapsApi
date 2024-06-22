@@ -25,3 +25,5 @@ assemblyai
 
 djangorestframework
 django-cors-headers
+
+django-q
