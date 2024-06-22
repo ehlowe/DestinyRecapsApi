@@ -499,48 +499,43 @@ async def generate_summarized_segments(transcript, segments=150, increment_chars
 # Tester for prompting
 async def generate_meta_summary_tester(summarized_chunks, video_id=None):
     return await generate_meta_summary(summarized_chunks, video_id, prompt_info=2)
-async def generate_meta_summary(summarized_chunks, video_id=None,prompt_info=None, bias_injection_bool=False):
-    """
-    Takes in list of dictionaries with 'summary' field and generates a meta summary
-    
-    Returns string of the meta summary."""
-    
-    all_summaries=""
-    for mr in summarized_chunks:
-        #all_summaries+=mr["time_string"]+"\n"+mr["summary"]+"\n\n"
-        all_summaries+=mr["summary"]+"\n\n"
-    #print(all_summaries)
 
-    # print expected cost and ask if user wants to proceed
-    print("Expected cost: ",len(enc.encode(all_summaries))*(3/1000000.0))
-    if True:
-        # meta_model_prompt="Your purpose is to take a conglomerate of summaries and compile it into one conglomerate which provides a comprehensive and effective way of knowing what things were talked about in the collection of summaries. The summaries are off of a youtube video transcript of a youtube streamer named Destiny. You should do two parts, main or big topics that were talked about as a main focus or for a long period and another section of smaller details or topic that were covered briefly. These should be two large sections, each may be 300-500 words. In total you need to write around 1000 words. Be sure to include a lot of detail and be comprehensive to get to that 1000 word mark."
-        meta_model_prompt="Your purpose is to take a conglomerate of summaries and compile it into one conglomerate which provides a comprehensive and effective way of knowing what things were talked about in the collection of summaries. The summaries are off of a youtube video transcript of a youtube streamer named Destiny. You should do two parts, main or big topics that were talked about as a main focus or for a long period and another section of smaller details or topic that were covered briefly. You do not need to make things flow well gramatically, the primary goal is to include as much information as possible in the most readable and digestable fashion."
+class meta_summary_geneator:
+
+    model_company=ModelCompanyEnum.anthropic
+    model_name=ModelNameEnum.claude_3_5_sonnet
+
+    meta_model_prompt="Your purpose is to take a conglomerate of summaries and compile it into one conglomerate which provides a comprehensive and effective way of knowing what things were talked about in the collection of summaries. The summaries are off of a youtube video transcript of a youtube streamer named Destiny. You should do two parts, main or big topics that were talked about as a main focus or for a long period and another section of smaller details or topic that were covered briefly. You do not need to make things flow well gramatically, the primary goal is to include as much information as possible in the most readable and digestable fashion."
+
+    meta_model_prompt="""Your purpose is to take a conglomerate of summaries and compile it into one conglomerate which provides a comprehensive and effective way of knowing what things were talked about in the collection of summaries. The summaries are off of a youtube video transcript of a youtube streamer named Destiny. You should do two parts, main or big topics that were talked about as a main focus or for a long period and another section of smaller details or topic that were covered briefly. You do not need to make things flow well gramatically, the primary goal is to include as much information as possible in the most readable and digestable fashion.
+                
+USE MARKDOWN FOR READABILITY. Be clever with your markdown to make the summary more readable. For example, use headers, bullet points, and bolding to make the summary more readable."""
+    user_prompt="Collection of summaries for the video/transcript: "
+
+    async def generate_meta_summary(summarized_chunks=None, model_name=model_name, model_company=model_company, meta_model_prompt=meta_model_prompt, bias_injection_bool=False, bias_injection="",user_prompt=user_prompt):
+        """
+        Takes in list of dictionaries with 'summary' field and generates a meta summary
         
-        if prompt_info:
-            meta_model_prompt="""Your purpose is to take a conglomerate of summaries and compile it into one conglomerate which provides a comprehensive and effective way of knowing what things were talked about in the collection of summaries. The summaries are off of a youtube video transcript of a youtube streamer named Destiny. You should do two parts, main or big topics that were talked about as a main focus or for a long period and another section of smaller details or topic that were covered briefly. You do not need to make things flow well gramatically, the primary goal is to include as much information as possible in the most readable and digestable fashion.
-            
-            USE MARKDOWN FOR READABILITY. Be clever with your markdown to make the summary more readable. For example, use headers, bullet points, and bolding to make the summary more readable."""
-        
+        Returns string of the meta summary."""
 
-        #These should be two large sections, each may be 300-500 words. In total you need to write around 1000 words. Be sure to include a lot of detail and be comprehensive to get to that 1000 word mark."
+        # Standard
+        all_summaries=""
+        for mr in summarized_chunks:
+            all_summaries+=mr["summary"]+"\n\n"
+        # print expected cost and ask if user wants to proceed
+        print("Expected cost: ",len(enc.encode(all_summaries))*(3/1000000.0))
 
-        if bias_injection_bool:
-            bias_injection="Some information about me the user, I like technology, specifically software but technology generally, I am interested in full democracy, I am probably a bit right leaning and am curious about critiques to conservative views, I am curious about science, and I enjoy humor. "
-            if bias_injection!="":
-                meta_model_prompt+=" If the user states information about them, cater the summary to their interests."
+        # if bias_injection_bool:
+        #     bias_injection="Some information about me the user, I like technology, specifically software but technology generally, I am interested in full democracy, I am probably a bit right leaning and am curious about critiques to conservative views, I am curious about science, and I enjoy humor. "
+        #     if bias_injection!="":
+        #         meta_model_prompt+=" If the user states information about them, cater the summary to their interests."
 
-        # Meta summary
-        model_company=ModelCompanyEnum.anthropic
-        model_name=ModelNameEnum.claude_3_5_sonnet
-        if prompt_info:
-            model_company=ModelCompanyEnum.openai
-            model_name=ModelNameEnum.gpt_4o
+        # if bias_injection_bool:
+        #     prompt=[{"role":"system","content":meta_model_prompt},{"role":"user", "content": bias_injection+"Collection of summaries for the video/transcript: "+all_summaries}]
+        # else:
+        #     prompt=[{"role":"system","content":meta_model_prompt},{"role":"user", "content": "Collection of summaries for the video/transcript: "+all_summaries}]
 
-        if bias_injection_bool:
-            prompt=[{"role":"system","content":meta_model_prompt},{"role":"user", "content": bias_injection+"Collection of summaries for the video/transcript: "+all_summaries}]
-        else:
-            prompt=[{"role":"system","content":meta_model_prompt},{"role":"user", "content": "Collection of summaries for the video/transcript: "+all_summaries}]
+        prompt=[{"role":"system","content":meta_model_prompt},{"role":"user", "content": user_prompt+all_summaries}]
         
         bot_response=await async_response_handler(
             prompt=prompt,
@@ -549,8 +544,6 @@ async def generate_meta_summary(summarized_chunks, video_id=None,prompt_info=Non
         )
 
         return bot_response
-    else:
-        return ""
     
 # # Generate hook for recap
 async def generate_recap_hook(recap, video_title=None, version_select=None):
