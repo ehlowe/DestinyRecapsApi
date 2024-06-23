@@ -19,6 +19,7 @@ from moviepy.editor import AudioFileClip, concatenate_audioclips
 import yt_dlp
 import copy
 from pytube import YouTube
+import re
 
 
 # import from base directory
@@ -46,6 +47,16 @@ class ModelNameEnum(str, Enum):
     claude_3_5_sonnet = "claude-3-5-sonnet-20240620"
     claude_3_sonnet = "claude-3-sonnet-20240229"
     claude_3_opus = "claude-3-opus-20240229"
+    claude_3_haiku = "claude-3-haiku-20240307"
+class ModelCostEnum(str, Enum):
+    gpt_4_turbo = {"input": 10/1000000.0, "output": 30/1000000.0}
+    gpt_4o = {"input": 5/1000000.0, "output": 20/1000000.0}
+    gpt_3_5_turbo = {"input": 1/1000000.0, "output": 8/1000000.0}
+    claude_3_5_sonnet = {"input": 3/1000000.0, "output": 15/1000000.0}
+    claude_3_sonnet = {"input": 3/1000000.0, "output": 15/1000000.0}
+    claude_3_opus = {"input": 10/1000000.0, "output": 60/1000000.0}
+    claude_3_haiku = {"input": 0.25/1000000.0, "output": 1.25/1000000.0}
+
 
 # Response Handler
 async def async_response_handler(
@@ -82,13 +93,20 @@ async def async_response_handler(
         raise Exception("Model company not recognized")
     
 # calculate cost
-def calculate_cost(model_name, tokens):
-    cost_rates={"claude-3-sonnet-20240229": {"input": 3/1000000.0, "output": 15/1000000.0}}
-    cost_rate=cost_rates[model_name]
+def calculate_cost(model_name, input="", output=""):
+    # get the cost rates for the model name
+    for model_enum_name in ModelNameEnum:
+        if model_name==model_enum_name.value:
+            cost_rate = ModelCostEnum[model_enum_name.name].value
+            cost_rate=eval(cost_rate)
 
-    input_cost = tokens[0] * cost_rate["input"]
-    output_cost = tokens[1] * cost_rate["output"]
-    return {"input": input_cost, "output": output_cost}
+            input_cost = len(input) * cost_rate["input"]
+            output_cost = len(output) * cost_rate["output"]
+            # return {"input": input_cost, "output": output_cost}
+            cost=input_cost+output_cost
+            return cost
+    
+    return 0
 
 
 
@@ -405,6 +423,9 @@ async def generate_summarized_segments(transcript, segments=150, increment_chars
     
     Returns a list of dictionaries with the summaries annotated by 'summary'
     """
+    model_company=ModelCompanyEnum.anthropic
+    model_name=ModelNameEnum.claude_3_5_sonnet
+
     # get a certain number of segments
     char_start_index=0
     model_responses=[]
@@ -437,11 +458,10 @@ async def generate_summarized_segments(transcript, segments=150, increment_chars
     prev_cost=input_cost+output_cost
     temp_input_cost=0
     temp_output_cost=0
+    temp_cost=0
     for m in model_responses: 
-        seg_costs=calculate_cost("claude-3-sonnet-20240229", [len(enc.encode(m["transcript"])), len(enc.encode("a b c"*200))])
-        temp_input_cost+=seg_costs["input"]
-        temp_output_cost+=seg_costs["output"]
-    print("Approximate cost: ",temp_input_cost+temp_output_cost-prev_cost, "  Number of segments: ",len(model_responses))
+        temp_cost+=calculate_cost(model_name, len(enc.encode(m["transcript"])), len(enc.encode("a b c"*200)))
+    print("Approximate cost: ",temp_cost, "  Number of segments: ",len(model_responses))
 
     async def fetch_response(input_data):
         transcript_segment=input_data["transcript"]
@@ -468,8 +488,6 @@ async def generate_summarized_segments(transcript, segments=150, increment_chars
             bot_response=""
             print(str(index)+" ", end="")
             try:
-                model_company=ModelCompanyEnum.anthropic
-                model_name=ModelNameEnum.claude_3_5_sonnet
                 bot_response=await async_response_handler(
                     prompt=conv_messages,
                     modelcompany=model_company,
@@ -500,7 +518,7 @@ async def generate_summarized_segments(transcript, segments=150, increment_chars
 async def generate_meta_summary_tester(summarized_chunks, video_id=None):
     return await generate_meta_summary(summarized_chunks, video_id, prompt_info=2)
 
-class meta_summary_geneator:
+class meta_summary_generator:
 
     model_company=ModelCompanyEnum.anthropic
     model_name=ModelNameEnum.claude_3_5_sonnet
@@ -510,9 +528,14 @@ class meta_summary_geneator:
     meta_model_prompt="""Your purpose is to take a conglomerate of summaries and compile it into one conglomerate which provides a comprehensive and effective way of knowing what things were talked about in the collection of summaries. The summaries are off of a youtube video transcript of a youtube streamer named Destiny. You should do two parts, main or big topics that were talked about as a main focus or for a long period and another section of smaller details or topic that were covered briefly. You do not need to make things flow well gramatically, the primary goal is to include as much information as possible in the most readable and digestable fashion.
                 
 USE MARKDOWN FOR READABILITY. Be clever with your markdown to make the summary more readable. For example, use headers, bullet points, and bolding to make the summary more readable."""
+
+    html_sytem="""Your purpose is to take a conglomerate of summaries and compile it into one conglomerate which provides a comprehensive and effective way of knowing what things were talked about in the collection of summaries. The summaries are off of a youtube video transcript of a youtube streamer named Destiny. You should do two parts, main or big topics that were talked about as a main focus or for a long period and another section of smaller details or topic that were covered briefly. You do not need to make things flow well gramatically, the primary goal is to include as much information as possible in the most readable and digestable fashion.
+                
+USE HTML FOR READABILITY. Be clever with your HTML to make the summary more readable. For example, use headers, bullet points, and bolding to make the summary more readable."""
+
     user_prompt="Collection of summaries for the video/transcript: "
 
-    async def generate_meta_summary(summarized_chunks=None, model_name=model_name, model_company=model_company, meta_model_prompt=meta_model_prompt, bias_injection_bool=False, bias_injection="",user_prompt=user_prompt):
+    async def generate_meta_summary(summarized_chunks=None, model_name=model_name, model_company=model_company, meta_model_prompt=html_sytem, bias_injection_bool=False, bias_injection="",user_prompt=user_prompt):
         """
         Takes in list of dictionaries with 'summary' field and generates a meta summary
         
@@ -544,6 +567,181 @@ USE MARKDOWN FOR READABILITY. Be clever with your markdown to make the summary m
         )
 
         return bot_response
+    
+
+class recap_zoomed_in_generator:
+
+    model_company=ModelCompanyEnum.anthropic
+    model_name=ModelNameEnum.claude_3_5_sonnet
+    zoom_generator_model_name=ModelNameEnum.claude_3_haiku
+
+    system_prompt="""Your goal is to take a stream recap and the summaries that were used to constitute the recap and create extra detail for the line items of the recap. The recap has two sections, a main topics section and a smaller topics section. You must recommend a summary chunks that could be used to make a more detailed pane for each of these line items. The summaried chunks will be numbered like '(Summary Chunk X.)'
+    
+When giving the chunks for each topic or thing it is important to be able to tie a key to the thing so that which one you are talking about can be parsed. To do this for the main topics you should take the title and use that title to be the key, for the smaller details you should take the list item and use that. Here is what that might look like this:
+"Large topics: 
+<'Watching Basketball': 0, 3>
+<'Debating about gun control': 4, 7, 8>
+
+Smaller topics:
+<'Thoughts on chat drama': 3>
+"""
+
+    system_prompt="""Your goal is to take a stream recap and the summaries that were used to constitute the recap and create extra detail for the line items of the recap. The recap has two sections, a main topics section and a smaller topics section. You must recommend a summary chunks that could be used to make a more detailed pane for each of these line items. The summaried chunks will be numbered like '(Summary Chunk X.)'
+    
+When giving the chunks for each topic or thing it is important to be able to tie a key to the thing and have the context of it so that which one you are talking about can be parsed. To do this for the main topics you should take the title and use that title to be the key for the chunks. For the main topics you should also include the content under the title if there are bullets under that title. For the smaller details you should take the list item and use that. Here is what that might look like this:
+"Large topics: 
+{{{"Watching Basketball": [0, 3], "content": ["<strong>Watching Basketball</strong> Debating about the NBA and the players", "<strong>Watching Basketball</strong> Reacting to clips of basketball games"]}}}
+{{{"Debating about gun control": [4, 7, 8], "content": ["<strong>Weapon modification</strong> Debating about bump stocks and other modifications and the impact", "<strong>Gun control</strong> Debating about the effectiveness of gun control"]}}}
+
+Smaller topics:
+{{{"Thoughts on chat drama": [3],  "content": ["<strong>Chat drama</strong> Reacting to chat drama"]}}}
+"""
+
+    zoom_prompt="""You are giving selected chunks of a youtube transcript and your purpose is to pull out a description of the topics given with respect to what is seen in the transcript. Basically the stream was recapped with bullet points and now you are filling out a more detailed description for those titles and bullet points. What you generated should be more paragraph style than bullet point style.
+
+Try to use as much literal detail from the transcript about what was said or done, don't use any fluff. Your response doesn't need to flow well as long as you are able to concisely provide accurate and in-depth information about the subject matter. Always get right into, no introduction.
+
+Do not analyize the content or speak on what the conclusion is just simply report what was said or done in the transcript."""
+    zoom_prompt="""You are giving selected chunks of a youtube transcript and your purpose is to pull out a description of the topics given with respect to what is seen in the transcript. Basically the stream was recapped with bullet points and now you are filling out a more detailed description for those titles and bullet points. What you generated should be more paragraph style than bullet point style.
+
+The only thing you can speak about is actually what was said or what happened, no other commentary is allowed. Be as concise as possible and as detailed as possible in what you include, quotes are encouraged."""
+
+    zoom_prompt="""You are to give the most unbiased and detailed description of the topic as possible and nothing else. No bullet points, no lists. NEVER BE IN FAVOR OR AGAINST ANYTHING MENTIONED YOUR TAKE IS NOT WARRANTED."""#BE EXTREMELY GOOFY IN THE RESPONSE THOUGH THIS IS A REQUIREENT."""
+
+    zoom_prompt="""You are to give a 0 fluff, 0 emotion, 0 opinion paragraph. A singular paragraph. This can be long so include quotes and get as close to the transcript as possible. NO INTRO, JUST PARAGRAPH, NO BULLETPOINTS NO LIST."""# This should aim to be longer rather than shorter."""
+
+
+    reformat_prompt="""You are a recap reformatter, you will need to take the context of a recap and use the topic and zoom pairs to create a list of dictionaries for [{'title': title, 'summary':original_content, 'zoom':zoom_content}]
+    
+For each of those items (title, original_content, zoom_content) those strings of html should be in tripple quotation marks."""
+
+    async def reformat_recap(recap, topic_prompts, zooms, reformat_prompt=reformat_prompt, model_name=model_name, model_company=model_company):
+
+        reformat_task_prompts=[]
+        for topic_prompt, zoom in zip(topic_prompts, zooms):
+            reformat_task_prompt=f"""
+--------------------------------
+Topic: {topic_prompt}
+Zoom: {zoom}
+--------------------------------
+"""
+            reformat_task_prompts.append(reformat_task_prompt)
+
+        reformat_tasks_prompt="\n".join(reformat_task_prompts)
+            
+
+        prompt=[{"role":"system","content":reformat_prompt},{"role":"user", "content": f"Here is the recap: {recap}\n\nHere are the pairs of sections and zoom: {reformat_tasks_prompt}"}]
+
+        bot_response=await async_response_handler(
+            prompt=prompt,
+            modelcompany=model_company,
+            modelname=model_name,
+        )
+
+        return bot_response
+
+    @classmethod
+    async def generate_zoom(cls, topic_prompt_str, transcript_chunks_str, model_name=zoom_generator_model_name, model_company=model_company, zoom_prompt=zoom_prompt):
+
+        prompt=[{"role":"system","content":zoom_prompt},{"role":"user", "content": f"Here is the transcript data to look at {transcript_chunks_str}\n\nHere is your only focus, you must cover directly on these topics as a category, imagine someone asked you a question with respect to the direction of these topics: {topic_prompt_str}"}]
+
+        prompt=[{"role":"system","content":zoom_prompt},{"role":"user", "content": f"Here is the transcript data to look at {transcript_chunks_str}\n\nMake a paragraph on this that is your only focus: {topic_prompt_str}"}]
+
+        cost=0
+        cost+=calculate_cost(model_name, input=(prompt[0]["content"]+prompt[1]["content"]))
+        
+        bot_response=await async_response_handler(
+            prompt=prompt,
+            modelcompany=model_company,
+            modelname=model_name,
+        )
+        cost+=calculate_cost(model_name, output=bot_response)
+        
+        return bot_response, cost
+    
+    @classmethod
+    async def generate_all_zooms(cls, topic_prompts, transcript_chunks_prompts, model_name=zoom_generator_model_name, model_company=model_company, zoom_prompt=zoom_prompt):
+        tasks=[]
+        for i, (topic_prompt, transcript_chunks_str) in enumerate(zip(topic_prompts, transcript_chunks_prompts)):
+            tasks.append(cls.generate_zoom(topic_prompt, transcript_chunks_str, model_name=model_name, model_company=model_company, zoom_prompt=zoom_prompt))
+        
+        results=await asyncio.gather(*tasks)
+        zooms=[]
+        costs=0
+        for result in results:
+            zooms.append(result[0])
+            costs+=result[1]
+        print(costs)
+        return zooms
+
+    def prepare_zoom_inputs(summarized_chunks, chunk_annotations_str):
+        # Turn annotation string into list of dictionaries
+        pattern=re.compile(r'\{\{\{.*?\}\}\}')
+        chunk_annotations_temp=pattern.findall(chunk_annotations_str)
+        chunk_annotations_temp=[chunk_annotation.replace("{{{", "{").replace("}}}", "}") for chunk_annotation in chunk_annotations_temp]
+        chunk_annotations=[]
+        for chunk_annotation in chunk_annotations_temp:
+            chunk_annotations.append(json.loads(chunk_annotation))
+
+        # turn summarized chunks into prompt contexts
+        topic_prompts=[]
+        transcript_chunks_prompts=[]
+        for chunk_annotation in chunk_annotations:
+            # get topic prompt and chunk indexes for transcript prompt
+            temp_prompt_str=""
+            chunk_indexes=[]
+            for key, value in chunk_annotation.items():
+                if key=="content":
+                    temp_prompt_str+="\n"+", ".join(value)
+                else:
+                    chunk_indexes=value
+                    temp_prompt_str+=key
+            topic_prompts.append(temp_prompt_str)
+            
+            # get transcript prompt from the indexes
+            temp_transcript_str=""
+            for chunk_index in chunk_indexes:
+                temp_transcript_str+=summarized_chunks[chunk_index]["transcript"]+"\n\n"
+            transcript_chunks_prompts.append(temp_transcript_str)
+
+        return chunk_annotations, topic_prompts, transcript_chunks_prompts
+        
+    async def annotate_zoom_chunks(summaized_chunks, recap, model_name=model_name, model_company=model_company, system_prompt=system_prompt):
+        """Takes in list of dictionaries with 'summary' field and generates a zoomed in recap
+        
+        Returns string of the zoomed in recap."""
+        # Standard
+        all_summaries=""
+        i=0
+        for mr in summaized_chunks:
+            all_summaries+=f"(Summary Chunk {i})."+mr["summary"]+"\n\n"
+            i+=1
+        # print expected cost and ask if user wants to proceed
+        print("Expected cost: ",len(enc.encode(all_summaries))*(3/1000000.0))
+
+        # if bias_injection_bool:
+        #     bias_injection="Some information about me the user, I like technology, specifically software but technology generally, I am interested in full democracy, I am probably a bit right leaning and am curious about critiques to conservative views, I am curious about science, and I enjoy humor. "
+        #     if bias_injection!="":
+        #         meta_model_prompt+=" If the user states information about them, cater the summary to their interests."
+
+        # if bias_injection_bool:
+        #     prompt=[{"role":"system","content":meta_model_prompt},{"role":"user", "content": bias_injection+"Collection of summaries for the video/transcript: "+all_summaries}]
+        # else:
+        #     prompt=[{"role":"system","content":meta_model_prompt},{"role":"user", "content": "Collection of summaries for the video/transcript: "+all_summaries}]
+
+        prompt=[{"role":"system","content":system_prompt},{"role":"user", "content": "Collection of summaries for the video/transcript: "+all_summaries+"\n\nRecap: "+recap}]
+        
+        bot_response=await async_response_handler(
+            prompt=prompt,
+            modelcompany=model_company,
+            modelname=model_name,
+        )
+
+        return bot_response
+    
+
+
+
     
 # # Generate hook for recap
 async def generate_recap_hook(recap, video_title=None, version_select=None):
@@ -630,3 +828,120 @@ async def search_vectordb(vector_db, query):
 
     D, I = vector_db.search(query_embedding_np, k)
     return (D,I)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# # TEST FUNCTIONS
+# send a discord message in test channel
+import discord
+async def discord_test(test_message):
+    class MessageSendingClient(discord.Client):
+        async def on_ready(self):
+            async def send_message(message_str):
+                start_index=0
+                recap_chunks={}
+                recap_chunks["start_finish"]=[0]
+                recap_chunks["segments"]=[]
+                increment_size=1500
+
+                # increment for the number of segments needed
+                for i in range((len(message_str)//increment_size)+1):
+                    
+                    # find the the reasonable end of the segment
+                    finish_index=start_index+increment_size
+                    if finish_index>=len(message_str):
+                        finish_index=None
+                    else:
+                        while message_str[finish_index]!="\n":
+                            finish_index+=1
+                            if (finish_index-start_index)>2100:
+                                print("Didn't find a newline")
+                                break
+                            if finish_index>=len(message_str):
+                                finish_index=None
+                                break
+                    
+                    # append the segments to the list
+                    recap_chunks["segments"].append(message_str[start_index:finish_index])
+                    start_index=finish_index
+                    recap_chunks["start_finish"].append(start_index)
+
+                for recap_chunk in recap_chunks["segments"]:
+                    await channel.send(recap_chunk)
+            
+            try:
+                channels=self.get_all_channels()
+                for channel in channels:
+                    print(channel.name)
+                    if channel.name=="test":
+                        if channel:
+                            await send_message(test_message)
+                            # await channel.send(test_message)
+                await self.close()
+            except Exception as e:
+                print("Error: ",e)
+                await self.close()
+    
+    try:
+        intents = discord.Intents.default()
+        intents.messages = True 
+        client = MessageSendingClient(intents=intents)
+
+        await client.start(views.keys["discord"])
+
+        return "Completed"
+    except Exception as e:
+        print("Error: ",e)
+        return e

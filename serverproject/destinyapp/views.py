@@ -15,6 +15,7 @@ from pathlib import Path
 import traceback
 from chat_downloader import ChatDownloader
 from pytube import YouTube
+import html2text
 
 # webdriver on vyneer website
 from selenium import webdriver
@@ -175,8 +176,14 @@ async def auto_recaps_generator(request):
     discord_recaps_to_send=[]
 
     # # Discord Testing
-    # yt_ids=[]
-    # discord_recaps_to_send=[{"meta":"Test","yt_id":"QZqGqsDlFrQ"}]
+    yt_ids=[]
+    discord_recaps_to_send=[{"meta":"Test","yt_id":"3kJr7ODrwNw"}]
+    trancript_model_data=await saf.grab_transcript_data(discord_recaps_to_send[0]["yt_id"])
+    recap = await saf.meta_summary_generator.generate_meta_summary(trancript_model_data.summarized_chunks)
+    recap_hook=await saf.generate_recap_hook(recap)
+    recap=recap_hook+"\n"+recap+"\n\nDISCLAIMER: This is all AI generated and there are frequent errors."
+    discord_recaps_to_send[0]["meta"]=recap
+    print("Recap Generated: ",recap)
 
     # redo a transcript
     skip_transcript=False
@@ -284,7 +291,7 @@ async def auto_recaps_generator(request):
 
                     # initialize variables for recap message
                     tag_message="@everyone \n"
-                    message_str=tag_message+recap["meta"]
+                    message_str=tag_message+html2text.html2text(recap["meta"])
                     start_index=0
                     recap_chunks={}
                     recap_chunks["start_finish"]=[0]
@@ -313,6 +320,10 @@ async def auto_recaps_generator(request):
                         start_index=finish_index
                         recap_chunks["start_finish"].append(start_index)
 
+                        if finish_index==None:
+                            break
+
+                    print("Sending chunks: ",len(recap_chunks["segments"]))
                     for recap_chunk in recap_chunks["segments"]:
                         await channel.send(recap_chunk)
 
@@ -325,8 +336,15 @@ async def auto_recaps_generator(request):
                         if channel:
                             for recap in discord_recaps_to_send:
                                 print("Sending Recap")
-                                await send_recap(recap)
+                                try:
+                                    await send_recap(recap)
+                                except Exception as e:
+                                    # print as much as possible
+                                    print("ERROR: ",e)
+                                    print(traceback.format_exc())
+
                 await self.close()
+                print("Send and client closed")
 
         intents = discord.Intents.default()
         intents.messages = True 
