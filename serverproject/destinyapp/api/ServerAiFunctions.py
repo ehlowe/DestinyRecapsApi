@@ -20,6 +20,7 @@ import yt_dlp
 import copy
 from pytube import YouTube
 import re
+from bs4 import BeautifulSoup
 
 
 # import from base directory
@@ -100,8 +101,9 @@ def calculate_cost(model_name, input="", output=""):
             cost_rate = ModelCostEnum[model_enum_name.name].value
             cost_rate=eval(cost_rate)
 
-            input_cost = len(input) * cost_rate["input"]
-            output_cost = len(output) * cost_rate["output"]
+            input_cost = len(enc.encode(input)) * cost_rate["input"]
+            output_cost = len(enc.encode(output)) * cost_rate["output"]
+            # print(input_cost, output_cost, len(input), len(output))
             # return {"input": input_cost, "output": output_cost}
             cost=input_cost+output_cost
             return cost
@@ -232,8 +234,11 @@ async def video_download(video_id):#, output_folder, output_name):
         youtube_video = AudioFileClip(youtube_audio_path)
         merged_audio = concatenate_audioclips([destiny_speech, youtube_video])
         merged_audio.write_audiofile("workingaudio/merged_audio.mp3")
+        print("download thread finished")
+        return
 
     await asyncio.to_thread(download_video_thread, video_id)
+    print("download thread closed")
 
     
 # Raw Transcript Generation
@@ -245,7 +250,9 @@ async def assembly_transcript_generation(video_id, file_path):
         config = views.aai.TranscriptionConfig(speaker_labels=True, speech_model="nano")
         transcript = transcriber.transcribe(file_path, config=config)
         return transcript.json_response["utterances"]
+    print("Starting assembly transcription thread")
     thread_response=await asyncio.to_thread(transcribe_audio_thread, file_path)
+    print("Finished assembly transcription thread")
     return thread_response
 
 
@@ -447,7 +454,7 @@ async def generate_summarized_segments(transcript, segments=150, increment_chars
 
         sf_str=f"Start time {int(hours):02d}:{int(minutes):02d}:{seconds:06.3f}  End time {int(hours_end):02d}:{int(minutes_end):02d}:{seconds_end:06.3f}"
         
-        model_responses.append({"summary": "","transcript": input_transcript,"time_string":sf_str,"char_start_finsih_indexes":[char_start_index,char_start_index+increment_chars], "index":index, "start_second":start_second_raw, "end_second":end_second_raw})
+        model_responses.append({"summary": "","transcript": input_transcript,"time_string":sf_str,"char_start_finish_indexes":[char_start_index,char_start_index+increment_chars], "index":index, "start_second":start_second_raw, "end_second":end_second_raw})
 
         index+=1
         char_start_index+=increment_chars-300
@@ -460,7 +467,7 @@ async def generate_summarized_segments(transcript, segments=150, increment_chars
     temp_output_cost=0
     temp_cost=0
     for m in model_responses: 
-        temp_cost+=calculate_cost(model_name, len(enc.encode(m["transcript"])), len(enc.encode("a b c"*200)))
+        temp_cost+=calculate_cost(model_name, m["transcript"], "a b c"*200)
     print("Approximate cost: ",temp_cost, "  Number of segments: ",len(model_responses))
 
     async def fetch_response(input_data):
@@ -516,7 +523,7 @@ async def generate_summarized_segments(transcript, segments=150, increment_chars
 # # Generate Meta Summary
 # Tester for prompting
 async def generate_meta_summary_tester(summarized_chunks, video_id=None):
-    return await generate_meta_summary(summarized_chunks, video_id, prompt_info=2)
+    return await meta_summary_generator.generate_meta_summary(summarized_chunks, video_id, prompt_info=2)
 
 class meta_summary_generator:
 
@@ -945,3 +952,103 @@ async def discord_test(test_message):
     except Exception as e:
         print("Error: ",e)
         return e
+    
+
+
+
+# chat processing
+
+
+# linked transcript has links on almost everything so to get the link at a given character count we must go throught hte nodes and count the characters
+def get_time_at_char_count(char_count, linked_transcript):
+
+    #example of linked_transcript: <a href="https://youtu.be/23K0euDg0FU?t=201" target="_blank">What\'s </a><a href="https://youtu.be/23K0euDg0FU?t=202" target="_blank">this? </a>
+    # Initialize BeautifulSoup with the linked transcript
+    soup = BeautifulSoup(linked_transcript, 'html.parser')
+    
+    # Track the cumulative count of characters processed
+    cumulative_count = 0
+
+    temp_time=""
+    
+    # Iterate through each <a> tag in the transcript
+    for link in soup.find_all('a'):
+        # Text inside the current <a> tag
+        link_text = link.get_text()
+        
+        # Update the cumulative count of characters by adding the length of the current link's text
+        cumulative_count += len(link_text)
+        
+        # Check if the cumulative character count has reached or exceeded the specified character count
+        if link.get('href') is not None:
+            temp_time=link['href'].split("t=")[-1].split("s")[0]
+        if cumulative_count >= char_count:
+            # Return the URL (href attribute) of the current <a> tag
+            return temp_time 
+        
+    print("Cumulative count", cumulative_count)
+    # If no link is found at the specified character count, return None
+    return temp_time
+
+def get_chats_in_start_end(simplified_messsages ,start_time=0,end_time=1):
+    chats_in_segment_dict={}
+    chats_in_segment=[]
+    chats_txt=""
+    chats_txt_numbered=""
+    chat_before_end=True
+    i=0
+    chat_num=0
+    while chat_before_end:
+        try:
+            # Get chat time
+            chat_msg_time=simplified_messsages[i]["time"]
+            if chat_msg_time.count(":")==1:
+                chat_time=datetime.datetime.strptime(chat_msg_time, '%M:%S')
+                chat_time=chat_time.minute*60+chat_time.second
+            else:
+                chat_time=datetime.datetime.strptime(chat_msg_time, '%H:%M:%S')
+                chat_time=chat_time.hour*3600+chat_time.minute*60+chat_time.second
+            
+            if (chat_time>end_time) or (chat_num>len(simplified_messsages)):
+                chat_before_end=False
+            elif chat_time>start_time:
+                #print(all_chat_messages[i])
+                chats_in_segment.append(simplified_messsages[i])
+                # chats_in_segment_dict[str(chat_num)]=simplified_messsages[i]
+                # chats_txt+=simplified_messsages[i]+"\n"
+                # chats_txt_numbered+=str(chat_num)+": "+simplified_messsages[i]+"\n"
+                chat_num+=1
+
+        except Exception as e:
+            pass
+            #print("Error", e)
+        i+=1
+
+        if i>len(simplified_messsages):
+            chat_before_end=False
+
+    print(len(chats_in_segment))
+    return chats_in_segment
+
+
+
+async def analyze_chat(segment_summary, chats_txt):
+    chat_summary_prompt="""The user will give you a chat log and transcript summary over a certain period of a livestream and you will parse out serious chat messages. You will do this by going over each number and saying yes or no for each, yes if serious and no if not. Here is an example of the formatting for your response: 0: no-(a word 1 word description as to what it is)\n1: yes-(brief description)\n...
+    
+At the end of this process you will need to mention the non serious messages. Start this line with 'Non serious messages: ', this section should explicitly state what people are thinking with examples, be as accurate and precise with the sentiment as you can be, sometimes they can be a little bit toxic but it is ok to represent that accurately. VAUGE AND GENERAL DESCRIPTIONS ARE NOT ACCEPTABLE."""
+    # chat_summary_prompt="The user will give you a chat log and transcript summary over a certain period of a livestream and you will parse out serious chat messages. You will do this by going over each number and saying yes or no for each, yes if serious and no if not. Here is an example of the formatting for your response: 0: no\n1: yes\n..." 
+
+    user_prompt="Here is the transcript summary: {transcript_summary}\n\nHere is the chat: {chat}\n\nThere are {number} chat messages and you must annotate all of them with yes or no."
+    #f_user_prompt=user_prompt.format(transcript_summary=transcript_segment["bot"], chat=chats_txt)
+
+
+    prompt=[{"role":"system","content":chat_summary_prompt},{"role":"user", "content": user_prompt.format(transcript_summary=segment_summary, chat=chats_txt,number=len(chats_txt.split("\n")))}]
+
+    model_company=ModelCompanyEnum.anthropic
+    model_name=ModelNameEnum.claude_3_haiku
+
+    chats_number_response=await async_response_handler(prompt, model_company, model_name)
+
+    print(calculate_cost(model_name, prompt[0]["content"]+prompt[1]["content"], chats_number_response))
+
+    return chats_number_response

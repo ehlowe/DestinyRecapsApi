@@ -1,7 +1,7 @@
 from django.urls import path
 from . import views
 urlpatterns = [
-    path('auto', views.auto_recaps_generator, name='run_automated_annotater'),
+    path('auto', views.auto_recaps_request, name='run_automated_annotater'),
 
     path('metas/', views.get_all_metas),
     path('details/', views.get_meta_details, name='get_meta_details'),
@@ -11,4 +11,6 @@ urlpatterns = [
     path('delete_transcripts', views.delete_transcripts, name='delete_transcripts'),
 
     path("view_raw_transcripts", views.view_raw_transcripts, name="view_raw_transcripts"),
+
+    path("redo", views.redo_recaps_request, name="redo_recaps_request"),
 ]

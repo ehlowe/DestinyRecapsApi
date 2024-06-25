@@ -43,7 +43,25 @@ INSTALLED_APPS = [
     "django_extensions",
     "destinyapp",
     'corsheaders',
+    # 'django_q',
 ]
+
+# Q_CLUSTER = {
+#     'name': 'DjangORM',
+#     'workers': 4,
+#     'retry': 500,
+#     'timeout': 90,
+#     'catch_up': False,  # This helps in not creating duplicates
+#     'orm': 'default'  # Using Django's ORM as the broker
+# }
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+    }
+}
+
+
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
