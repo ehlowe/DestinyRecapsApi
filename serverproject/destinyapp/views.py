@@ -16,6 +16,7 @@ import traceback
 from chat_downloader import ChatDownloader
 from pytube import YouTube
 import html2text
+import yt_dlp as youtube_dl
 
 # webdriver on vyneer website
 from selenium import webdriver
@@ -274,15 +275,20 @@ async def auto_recaps_generator():
 
                     # get some video metadata
                     async def get_video_metadata(video_id):
-                        url = 'https://www.youtube.com/watch?v='+video_id
-                        yt = YouTube(url)
-
-                        raw_date=yt.publish_date.__str__()
-                        date_obj=datetime.datetime.strptime(raw_date, "%Y-%m-%d %H:%M:%S")
-                        date_str=date_obj.strftime("%m/%d/%Y")
-
-                        full_title=yt.title+"\nStream Date: "+date_str
-
+                        ydl_opts = {}
+                        full_title=""
+                        try:
+                            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                                info_dict = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
+                                info_dict_g=info_dict
+                                upload_date = info_dict['upload_date']
+                                upload_date
+                                date_obj=datetime.datetime.strptime(upload_date, "%Y%m%d")
+                                date_str=date_obj.strftime("%m/%d/%Y")
+                                title=info_dict["title"]
+                                full_title=title+"\nStream Date~ "+date_str
+                        except Exception as e:
+                            pass
                         return full_title
                     full_title=await get_video_metadata(yt_id)
 
@@ -553,18 +559,23 @@ async def redo_recaps(transcript_model_datas, vector_embeedding_bool=True, summa
 
         # get some video metadata
         if video_metadata_bool:
+            # get some video metadata
             async def get_video_metadata(video_id):
-                url = 'https://www.youtube.com/watch?v='+video_id
-                yt = YouTube(url)
-
-                raw_date=yt.publish_date.__str__()
-                date_obj=datetime.datetime.strptime(raw_date, "%Y-%m-%d %H:%M:%S")
-                date_str=date_obj.strftime("%m/%d/%Y")
-
-                full_title=yt.title+"\nStream Date: "+date_str
-
+                ydl_opts = {}
+                full_title=""
+                try:
+                    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+                        info_dict = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
+                        info_dict_g=info_dict
+                        upload_date = info_dict['upload_date']
+                        upload_date
+                        date_obj=datetime.datetime.strptime(upload_date, "%Y%m%d")
+                        date_str=date_obj.strftime("%m/%d/%Y")
+                        title=info_dict["title"]
+                        full_title=title+"\nStream Date~ "+date_str
+                except Exception as e:
+                    pass
                 return full_title
-            full_title=await get_video_metadata(yt_id)
 
         # Save everything
         await saf.save_data(yt_id, save_processed_transcripts)
