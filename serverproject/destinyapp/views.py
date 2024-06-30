@@ -1,5 +1,6 @@
 from django.shortcuts import render
 import os
+import sys
 import requests
 import aiohttp
 import re
@@ -768,14 +769,18 @@ async def redo_recaps(transcript_model_datas, vector_embeedding_bool=True, summa
 # # PAGE DATA
 # Sends the summaies for every video
 def get_all_metas(request):
-    all_meta_data=TranscriptData.objects.all()
+    t_start=time.time()
+    #all_meta_data=TranscriptData.objects.all()
+
+    all_meta_data=TranscriptData.objects.defer('raw_transcript_data','linked_transcript','transcript','summarized_chunks').all()
+    
     
     filled_meta_data=[] 
     for meta_data in all_meta_data:
         if meta_data.meta=="":
             meta_data.meta="No meta available"
         print(meta_data.video_id)
-        if (meta_data.summarized_chunks!=[]) and (meta_data.meta!=""):
+        if (meta_data.meta!=""):
             #print(meta_data.meta)
             if meta_data.video_characteristics.get("title","")!="":
                 filled_meta_data.append({'video_id':meta_data.video_id,"meta":meta_data.meta,"title": meta_data.video_characteristics.get("title",None)})
@@ -786,36 +791,48 @@ def get_all_metas(request):
 
     filled_meta_data.reverse()
 
+    print("Time to get all metas: ",time.time()-t_start)
+
     return JsonResponse(filled_meta_data, safe=False)
 
 # Sends detailed video information given a video id
 async def get_meta_details(request):
-    print(request)
-
+    t_start=time.time()
     # get the query params from request
     video_id=request.GET.get("video_id")
 
     # get the data from the database
-    meta_data=await sync_to_async(TranscriptData.objects.get)(video_id=video_id)
+    # meta_data=await sync_to_async(TranscriptData.objects.get)(video_id=video_id)
+    meta_data=await sync_to_async(TranscriptData.objects.defer('raw_transcript_data','linked_transcript','summarized_chunks').get)(video_id=video_id)
 
-    # turn meta data into a dictionary
-    #meta_data=meta_data.meta
-
-    summary_chunks=meta_data.summarized_chunks
-    summary_chunks_str=""
-    for chunk in summary_chunks:
-        summary_chunks_str+=chunk["summary"]+"\n\n"
+    # summary_chunks=meta_data.summarized_chunks
+    # summary_chunks_str=""
+    # for chunk in summary_chunks:
+    #     summary_chunks_str+=chunk["summary"]+"\n\n"
 
     transcript=meta_data.transcript
 
     
     index_v=100000
 
-    return_dict={'meta': meta_data.meta, "title": meta_data.video_characteristics.get("title",None), "video_id":meta_data.video_id, 'summary_chunks':summary_chunks_str, "transcript":transcript,"linked_transcript":meta_data.linked_transcript, "index": index_v}
+    return_dict={'meta': meta_data.meta, "title": meta_data.video_characteristics.get("title",None), "video_id":meta_data.video_id, "transcript":transcript}
+
+    # return_dict={'meta': meta_data.meta, "title": meta_data.video_characteristics.get("title",None), "video_id":meta_data.video_id, "transcript":transcript,"linked_transcript":meta_data.linked_transcript}
+    
+    print("Time to get meta details: ",time.time()-t_start)
     try:
         JsonResponse(return_dict, safe=False)
     except Exception as e:
         print("KNOWN ERROR: ",e)
+    return JsonResponse(return_dict, safe=False)
+
+
+async def get_meta_linked_transcript(request):
+    video_id=request.GET.get("video_id")
+
+    meta_data=await sync_to_async(TranscriptData.objects.defer('raw_transcript_data').get)(video_id=video_id)
+
+    return_dict={"linked_transcript":meta_data.linked_transcript}
 
     return JsonResponse(return_dict, safe=False)
 

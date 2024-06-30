@@ -5,6 +5,7 @@ urlpatterns = [
 
     path('metas/', views.get_all_metas),
     path('details/', views.get_meta_details, name='get_meta_details'),
+    path("linked_transcript", views.get_meta_linked_transcript, name="get_linked_transcript"),
 
     path('get_query_index',views.get_scroll_index, name='get_scroll_index'),
 
