@@ -2,9 +2,8 @@ from django.db import models
 import json
 
 # Create your models here.
-class TranscriptData(models.Model):
+class StreamRecapData(models.Model):
     video_id = models.CharField(max_length=100)
-
     video_characteristics = models.JSONField(default=dict)
 
     transcript = models.CharField(max_length=1000000,default="")
@@ -16,8 +15,8 @@ class TranscriptData(models.Model):
 
     summarized_chunks = models.JSONField(default=list)
 
-    meta= models.CharField(max_length=1000000,default="")
-    meta_markdown= models.CharField(max_length=100000,default="")
+    recap= models.CharField(max_length=1000000,default="")
+    recap_markdown= models.CharField(max_length=100000,default="")
 
     # returns a string representation of the object
     def __str__(self):
