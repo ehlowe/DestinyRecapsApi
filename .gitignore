@@ -1,23 +1,20 @@
-# server ignores
+# Server ignores
 /serverproject/db.sqlite3
-/serverproject/serverproject/deployment_settings.py
-/serverproject/staticfiles/admin
-/serverproject/workingaudio/merged_audio.mp3
-/serverproject/workingaudio/testing_merged_audio.mp3
-/serverproject/workingaudio/raw.webm
 /serverproject/chromedriver.exe
 
-# destinyapp ignores
-/serverproject/destinyapp/vector_dbs
-/serverproject/destinyapp/__pycache__
+# Workingaudio Ignores
+/serverproject/destinyapp/working_folder/working_audio/merged_audio.mp3
+/serverproject/destinyapp/working_folder/working_audio/testing_merged_audio.mp3
+/serverproject/destinyapp/working_folder/working_audio/raw.webm
 
-# keys
-keys.json
+# VectorDB ignores
+/serverproject/destinyapp/working_folder/vectordbs
+
+# env
 .env
-
-# test notebooks
-/serverproject/testingnotebooks
 
 # global ignores
 __pycache__
 
+# testing ignores
+/serverproject/destinyapp/misc/testing_notebooks

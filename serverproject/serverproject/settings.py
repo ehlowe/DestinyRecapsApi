@@ -16,14 +16,12 @@ import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 import json
-keys=json.load(open(os.path.join(BASE_DIR.parent, "keys.json")))
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = keys["django_secret_key"]
+SECRET_KEY = os.environ.get("django_secret_key")
 
 # # SECURITY WARNING: don't run with debug turned on in production!
 # DEBUG = True
@@ -43,6 +41,7 @@ INSTALLED_APPS = [
     "django_extensions",
     "destinyapp",
     'corsheaders',
+    # 'rest_framework',
     # 'django_q',
 ]
 
@@ -62,6 +61,8 @@ CACHES = {
 }
 
 
+from django.utils.decorators import async_only_middleware
+
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -73,6 +74,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
+    # 'destinyapp.middleware.AsyncErrorHandlingMiddleware',
 ]
 CORS_ORIGIN_WHITE_LIST=[
     "http://localhost:5173/",
