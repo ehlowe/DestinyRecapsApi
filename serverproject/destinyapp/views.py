@@ -109,3 +109,33 @@ async def cache_locked_recap_generate():
 
 
 
+
+
+
+
+# serialize the stream_recap_data
+async def serialize_stream_recap_data(stream_recap_data):
+    serialized_data = StreamRecapDataSerializer(stream_recap_data).data
+    return serialized_data
+
+
+@password_checker
+async def download_stream_recap_data(request):
+    video_id=request.GET.get("video_id")
+    print("video_id", video_id)
+    stream_recap_data=await utils.database_operations.get_recap_data(video_id)
+
+    if stream_recap_data:
+        serialized_data=await serialize_stream_recap_data(stream_recap_data)
+        return JsonResponse(serialized_data, safe=False)
+    else:
+        test_return={"status":"no data"}
+        return JsonResponse(test_return, safe=False)
+
+
+
+
+
+
+
+

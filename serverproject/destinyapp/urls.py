@@ -17,6 +17,11 @@ urlpatterns = [
 
 
 
+    # download stream data
+    path('dl', views.download_stream_recap_data, name='download_stream_data'),
+
+
+
 
 
 
