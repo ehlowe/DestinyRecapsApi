@@ -64,7 +64,17 @@ When generating the points it should be from the context of the text segments pr
                 async def fetch_embedding(chunk):
                     # Simulate an async call to the embeddings API
                     #return await asyncio.to_thread(openai_client.embeddings.create, input=chunk, model=model)
-                    return await openai_client.embeddings.create(input=chunk, model=model)
+
+                    fails=0
+                    while fails<5:
+                        try:
+                            return await openai_client.embeddings.create(input=chunk, model=model)
+                        except Exception as e:
+                            fails+=1
+                            print("Emedding Fail Retrying:",e)
+                            await asyncio.sleep(10+(fails*2))
+                    return None
+                    
 
                 responses = await asyncio.gather(*(fetch_embedding(chunk) for chunk in text_chunks))
                 embeddings = [response.data[0].embedding for response in responses]

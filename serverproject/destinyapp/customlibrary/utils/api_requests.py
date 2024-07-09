@@ -11,6 +11,7 @@ enc=tiktoken.get_encoding("cl100k_base")
 model_name_company_mapping={
     "gpt-4-turbo": "openai",
     "gpt-4o": "openai",
+    "gpt-4o-mini": "openai",
     "gpt-3.5-turbo": "openai",
     "claude-3-5-sonnet-20240620": "anthropic",
     "claude-3-sonnet-20240229": "anthropic",
@@ -23,6 +24,7 @@ class ModelCompanyEnum(str, Enum):
 class ModelNameEnum(str, Enum):
     gpt_4_turbo = "gpt-4-turbo"
     gpt_4o = "gpt-4o"
+    gpt_4o_mini = "gpt-4o-mini"
     gpt_3_5_turbo = "gpt-3.5-turbo"
     claude_3_5_sonnet = "claude-3-5-sonnet-20240620"
     claude_3_sonnet = "claude-3-sonnet-20240229"
@@ -31,6 +33,7 @@ class ModelNameEnum(str, Enum):
 class ModelCostEnum(str, Enum):
     gpt_4_turbo = {"input": 10/1000000.0, "output": 30/1000000.0}
     gpt_4o = {"input": 5/1000000.0, "output": 20/1000000.0}
+    gpt_4o_mini = {"input": 0.3/1000000.0, "output": 0.6/1000000.0}
     gpt_3_5_turbo = {"input": 1/1000000.0, "output": 8/1000000.0}
     claude_3_5_sonnet = {"input": 3/1000000.0, "output": 15/1000000.0}
     claude_3_sonnet = {"input": 3/1000000.0, "output": 15/1000000.0}

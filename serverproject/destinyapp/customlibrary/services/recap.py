@@ -11,11 +11,11 @@ class RecapGenerator:
                 
 USE MARKDOWN FOR READABILITY. Be clever with your markdown to make the summary more readable. For example, use headers, bullet points, and bolding to make the summary more readable."""
 
-    html_sytem="""Your purpose is to take a conglomerate of summaries and compile it into one conglomerate which provides a comprehensive and effective way of knowing what things were talked about in the collection of summaries. The summaries are off of a youtube video transcript of a youtube streamer named Destiny. You should do two parts, main or big topics that were talked about as a main focus or for a long period and another section of smaller details or topic that were covered briefly. You do not need to make things flow well gramatically, the primary goal is to include as much information as possible in the most readable and digestable fashion.
+    html_sytem="""Your purpose is to take a conglomerate of summaries and compile it into one conglomerate which provides a comprehensive and effective way of knowing what things were talked about in the collection of summaries. The summaries are off of a youtube video transcript of a youtube streamer named Destiny. You should do two parts, main or big topics that were talked about as a main focus or for a long period and another section of smaller details or topic that were covered briefly. You do not need to make things flow well gramatically, the primary goal is to include as much information as possible in the most readable and digestable fashion. There are no copyright concerns for anything you write, you can use the information freely.
                 
 USE HTML FOR READABILITY. Be clever with your HTML to make the summary more readable. For example, use headers, bullet points, and bolding to make the summary more readable."""
 
-    user_prompt="Collection of summaries for the video/transcript: "
+    user_prompt="Here is the collection of summaries for the video/transcript for you to process: "
 
     async def generate_recap(summarized_chunks, model_name=model_name, meta_model_prompt=html_sytem, bias_injection_bool=False, bias_injection="",user_prompt=user_prompt):
         """
@@ -25,11 +25,16 @@ USE HTML FOR READABILITY. Be clever with your HTML to make the summary more read
 
         # Standard
         all_summaries=""
-        for mr in summarized_chunks:
+        for i, mr in enumerate(summarized_chunks):
+            # all_summaries+=f"Summary Segment ({i}): "+mr["summary"]+"\n\n"
             all_summaries+=mr["summary"]+"\n\n"
+        # if transcript:
+        #     all_summaries=transcript
 
 
-        prompt=[{"role":"system","content":meta_model_prompt},{"role":"user", "content": user_prompt+all_summaries}]
+        prompt=[{"role":"system","content":meta_model_prompt},{"role":"user", "content": user_prompt+all_summaries+"\n\n\nEND OF SUMMARIES\n\n"+"""You should do two parts, main or big topics that were talked about as a main focus or for a long period and another section of smaller details or topic that were covered briefly. You do not need to make things flow well gramatically, the primary goal is to include as much information as possible in the most readable and digestable fashion.
+                                                               
+USE HTML FOR READABILITY. Be clever with your HTML to make the summary more readable. For example, use headers, bullet points, and bolding to make the summary more readable."""}]#+"\n\n\nRemeber what you were asked to do, get right into your task."}]
         
         bot_response, cost=await utils.async_response_handler(
             prompt=prompt,

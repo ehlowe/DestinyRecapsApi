@@ -1,5 +1,6 @@
 import os
 import sys
+import traceback
 
 # Django imports
 from django.http import JsonResponse
@@ -21,7 +22,7 @@ delete_enabled=str_to_bool(os.environ.get("delete_enabled",""))
 from destinyapp.customlibrary import utils
 
 recap_generate_cache_lock_id = 'auto_recaps_generator_lock'
-
+download_lock_id = 'download_lock'
 
 from destinyapp.customlibrary import controller
 from rest_framework import serializers
@@ -47,7 +48,7 @@ from rest_framework.decorators import api_view
 
 # PAGE LOADING VIEWS
 async def get_all_recaps(request):
-    filled_meta_data = await utils.get_all_recaps()
+    filled_meta_data = await utils.get_all_recaps_fast()
     return JsonResponse(filled_meta_data, safe=False)
 
 async def get_linked_transcript(request):
@@ -57,7 +58,12 @@ async def get_linked_transcript(request):
 
 async def get_recap_details(request):
     video_id=request.GET.get("video_id")
-    recap_details=await utils.database_operations.get_recap_details(video_id)
+    recap_details=await utils.database_operations.get_fast_recap_details(video_id)
+    return JsonResponse(recap_details, safe=False)
+
+async def get_slow_recap_details(request):
+    video_id=request.GET.get("video_id")
+    recap_details=await utils.database_operations.get_slow_recap_details(video_id)
     return JsonResponse(recap_details, safe=False)
 
 
@@ -96,8 +102,14 @@ def enqueue_auto_recaps_generation():
 async def cache_locked_recap_generate():
     try:
         await controller.auto_recap_controller.run()
+
+    # print the error if any with as much information as possible
     except Exception as e:
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        print("Controller error")
+        print(repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
         print(e)
+        print("End of Controller error")
 
     cache.delete('auto_recaps_generator_lock')
     print("DELETED CACHE LOCK,  AUTO RECAPS FINISHED")
@@ -105,7 +117,103 @@ async def cache_locked_recap_generate():
 
 
 
+# AUTO RECAPS VIEW
+@password_checker
+async def recap_update_request(request):    
+    # make thread for auto_recaps_generator
+    recap_generation_started=enqueue_recap_update()
+
+    if recap_generation_started:
+        return JsonResponse({"response":"Recaps Update Started"})
+    else:
+        return JsonResponse({"response":"Recaps Update Already Running"})
+def enqueue_recap_update():
+    if not cache.get(recap_generate_cache_lock_id):
+        cache.set(recap_generate_cache_lock_id, True, timeout=7200)
+        asyncio.create_task(cache_locked_recap_update())
+        return True
+    else:
+        return False
+async def cache_locked_recap_update():
+    try:
+        await controller.update_controller.update()
+
+    # print the error if any with as much information as possible
+    except Exception as e:
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        print("Controller update error")
+        print(repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
+        print(e)
+        print("End of Controller update error")
+
+    cache.delete(recap_generate_cache_lock_id)
+    print("DELETED CACHE LOCK,  UPDATE FINISHED")
 
 
+
+
+
+
+
+# serialize the stream_recap_data
+async def serialize_stream_recap_data(stream_recap_data):
+    serialized_data = StreamRecapDataSerializer(stream_recap_data).data
+    return serialized_data
+
+async def download_stream_recap_data(request):
+    def check_dl_cache_lock(cache_lock_id):
+        if not cache.get(cache_lock_id):
+            cache.set(cache_lock_id, True, timeout=7200)
+            return True
+        else:
+            return False
+    
+    dl_locked=check_dl_cache_lock(download_lock_id)
+    try:
+        if not dl_locked:
+            video_id=request.GET.get("video_id")
+            print("video_id", video_id)
+            stream_recap_data=await utils.database_operations.get_recap_data(video_id)
+
+            if stream_recap_data:
+                serialized_data=await serialize_stream_recap_data(stream_recap_data)
+                return JsonResponse(serialized_data, safe=False)
+            else:
+                test_return={"status":"no data"}
+                return JsonResponse(test_return, safe=False)
+        else:
+            test_return={"status":"locked someone else is downloading"}
+            return JsonResponse(test_return, safe=False)
+    except Exception as e:
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        print("Download error")
+        print(repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
+        print(e)
+        print("End of Download error")
+        # remove lock if error
+        try:
+            cache.delete(download_lock_id)
+        except:
+            pass
+        return JsonResponse({"status":"error"}, safe=False)
+    
+
+
+
+
+
+
+
+
+
+
+@password_checker
+async def delete_stream_recap_data(request):
+    video_id=request.GET.get("video_id")
+    print("video_id", video_id)
+    if not delete_enabled:
+        return JsonResponse({"status":"deletion not enabled"}, safe=False)
+    await utils.database_operations.delete_stream_recap_data(video_id)
+    return JsonResponse({"status":"deleted"}, safe=False)
 
 
