@@ -47,14 +47,14 @@ class auto_recap_controller:
     async def generate_all(self, video_ids):
         # video_id_test="Gej2eHRwlM0"
         # video_id_test="kDsuggCYdyE"
-        video_id_test="SPaeA8shXFg"
+        # video_id_test="SPaeA8shXFg"
 
         discord_message_video_ids=[]
 
         # Loop through video ids
         for video_id in video_ids:
 
-            video_id=video_id_test
+            # video_id=video_id_test
 
             # Check run conditions for video_id
             test_stream_recap_data=await utils.get_recap_data(video_id)
