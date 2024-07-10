@@ -49,12 +49,17 @@ class auto_recap_controller:
         # video_id_test="kDsuggCYdyE"
         # video_id_test="SPaeA8shXFg"
 
+        video_id_test=None
+        # video_id_test="Krhk1FmL7b0"
+
+
         discord_message_video_ids=[]
 
         # Loop through video ids
         for video_id in video_ids:
 
-            # video_id=video_id_test
+            if video_id_test!=None:
+                video_id=video_id_test
 
             # Check run conditions for video_id
             test_stream_recap_data=await utils.get_recap_data(video_id)
@@ -95,6 +100,7 @@ class auto_recap_controller:
     async def produce_recap_data(video_id, transcript):
         # Generate Vector DB and Text Chunks
         vectordb, text_chunks = await services.VectorDbAndTextChunksGenerator.generate_basic_vectordb_and_chunks(video_id, transcript)
+        print("Vector DB and Text Chunks Generated")
 
         # Generate Summarized Segments
         segments_and_summaries = await services.SummarizedSegmentGenerator.generate_summarized_segments(transcript)

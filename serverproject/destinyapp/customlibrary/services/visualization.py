@@ -1,7 +1,6 @@
 import re
 import asyncio
 
-
 from .. import utils
 
 
@@ -66,13 +65,25 @@ Make your response using the delmiter 'Segment x (recap topic category):' about 
 
     prompt=[{"role":"system","content":system_prompt}, {"role": "user", "content": user_prompt}]
 
-    model_name=utils.ModelNameEnum.claude_3_5_sonnet
+    # model_name=utils.ModelNameEnum.claude_3_5_sonnet
+    model_name=utils.ModelNameEnum.claude_3_haiku
 
-    response_str, cost=await utils.async_response_handler(
-        prompt=prompt,
-        model_name=model_name,
-    )
-    print("Cost: ", cost)
+
+
+    fails=0
+    response_str=""
+    while fails<6:
+        try:
+            response_str, cost=await utils.async_response_handler(
+                prompt=prompt,
+                model_name=model_name,
+            )
+            print("Cost: ", cost)
+            break
+        except Exception as e:
+            fails+=1
+            print("Fail Retry count: ", fails)
+            await asyncio.sleep(10+(fails*2))
 
     return response_str
 
