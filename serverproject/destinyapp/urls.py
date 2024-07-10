@@ -16,7 +16,7 @@ urlpatterns = [
     path('get_query_index',views.search, name='get_scroll_index'),
 
 
-
+    path('dl', views.download_stream_recap_data, name='download_stream_recap_data'),
 
 
 
