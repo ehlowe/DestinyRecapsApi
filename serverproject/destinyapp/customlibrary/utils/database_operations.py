@@ -73,11 +73,11 @@ async def get_all_recaps():
 class LimitedRecapSerializer(serializers.ModelSerializer):
     class Meta:
         model = StreamRecapData
-        fields = ['video_characteristics', 'recap']
+        fields = ['video_id', 'video_characteristics', 'recap']
 async def get_all_recaps_fast():
     # Fetch all metadata asynchronously, get only the video_characteristics and recap fields
     all_recap_data = await sync_to_async(
-        lambda: list(StreamRecapData.objects.only('video_characteristics', 'recap').all())
+        lambda: list(StreamRecapData.objects.only('video_id','video_characteristics', 'recap').all())
     )()
 
     all_recap_data.reverse()
