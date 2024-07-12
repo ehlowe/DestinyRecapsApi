@@ -1,5 +1,6 @@
 import os
 import sys
+import traceback
 
 # Django imports
 from django.http import JsonResponse
@@ -96,8 +97,14 @@ def enqueue_auto_recaps_generation():
 async def cache_locked_recap_generate():
     try:
         await controller.auto_recap_controller.run()
+
+    # print the error if any with as much information as possible
     except Exception as e:
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        print("Controller error")
+        print(repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
         print(e)
+        print("End of Controller error")
 
     cache.delete('auto_recaps_generator_lock')
     print("DELETED CACHE LOCK,  AUTO RECAPS FINISHED")
@@ -127,3 +134,15 @@ async def download_stream_recap_data(request):
     else:
         test_return={"status":"no data"}
         return JsonResponse(test_return, safe=False)
+    
+
+@password_checker
+async def delete_stream_recap_data(request):
+    video_id=request.GET.get("video_id")
+    print("video_id", video_id)
+    if not delete_enabled:
+        return JsonResponse({"status":"deletion not enabled"}, safe=False)
+    await utils.database_operations.delete_stream_recap_data(video_id)
+    return JsonResponse({"status":"deleted"}, safe=False)
+
+

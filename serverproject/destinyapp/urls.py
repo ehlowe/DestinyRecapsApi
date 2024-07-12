@@ -19,6 +19,9 @@ urlpatterns = [
     path('dl', views.download_stream_recap_data, name='download_stream_recap_data'),
 
 
+    path('delete_stream_recap_data', views.delete_stream_recap_data, name='delete_stream_recap_data'),
+
+
 
     
 

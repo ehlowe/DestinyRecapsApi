@@ -1,8 +1,9 @@
 import time
+import os
 from destinyapp.models import StreamRecapData
 import asyncio
 from asgiref.sync import sync_to_async
-
+import traceback
 
 from . import services
 from . import utils
@@ -51,6 +52,12 @@ class auto_recap_controller:
 
         video_id_test=None
         # video_id_test="Krhk1FmL7b0"
+        # video_id_test="-JNo1S9EDXI"
+
+        if os.environ.get("discord_channel")=="recaps":
+            video_id_test=None
+
+        print("Video Id Test:", video_id_test)
 
 
         discord_message_video_ids=[]
@@ -67,18 +74,21 @@ class auto_recap_controller:
 
             # Must not have existing data and must not be live
             if (not live_bool) and (test_stream_recap_data==None):
+                try:
+                    # Get all transcript data
+                    transcript, linked_transcript, raw_transcript_data=await self.produce_transcript_data(video_id)
 
-                # Get all transcript data
-                transcript, linked_transcript, raw_transcript_data=await self.produce_transcript_data(video_id)
+                    # Get all recap data
+                    vectordb, text_chunks, segments_and_summaries, finalized_recap, full_title=await self.produce_recap_data(video_id, transcript)
 
-                # Get all recap data
-                vectordb, text_chunks, segments_and_summaries, finalized_recap, full_title=await self.produce_recap_data(video_id, transcript)
+                    # Save the data
+                    await self.save_data(video_id, full_title, raw_transcript_data, transcript, linked_transcript, text_chunks, segments_and_summaries, finalized_recap)
 
-                # Save the data
-                await self.save_data(video_id, full_title, raw_transcript_data, transcript, linked_transcript, text_chunks, segments_and_summaries, finalized_recap)
-
-                # add the video id to the list of video ids to send discord messages for
-                discord_message_video_ids.append(video_id)
+                    # add the video id to the list of video ids to send discord messages for
+                    discord_message_video_ids.append(video_id)
+                except Exception as e:
+                    print("Error in auto_recap_controller.generate_all: ", e)
+                    traceback.print_exc()
 
         return discord_message_video_ids
 

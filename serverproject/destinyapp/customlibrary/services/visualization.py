@@ -17,7 +17,7 @@ async def create_text_chunks(transcript, overlap_character_count=500):
 async def generate_text_chunk_batches(text_chunks):
 
     # target chunk batch size
-    target_batch_size=10
+    target_batch_size=20
 
     number_of_batches=((len(text_chunks)//target_batch_size)+1)
 
