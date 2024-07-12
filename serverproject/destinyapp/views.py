@@ -48,7 +48,7 @@ from rest_framework.decorators import api_view
 
 # PAGE LOADING VIEWS
 async def get_all_recaps(request):
-    filled_meta_data = await utils.get_all_recaps()
+    filled_meta_data = await utils.get_all_recaps_fast()
     return JsonResponse(filled_meta_data, safe=False)
 
 async def get_linked_transcript(request):
