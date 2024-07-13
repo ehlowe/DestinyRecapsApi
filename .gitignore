@@ -6,6 +6,8 @@
 /serverproject/destinyapp/working_folder/working_audio/merged_audio.mp3
 /serverproject/destinyapp/working_folder/working_audio/testing_merged_audio.mp3
 /serverproject/destinyapp/working_folder/working_audio/raw.webm
+/serverproject/destinyapp/working_folder/stream_plots
+
 
 # VectorDB ignores
 /serverproject/destinyapp/working_folder/vectordbs

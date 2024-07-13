@@ -58,7 +58,12 @@ async def get_linked_transcript(request):
 
 async def get_recap_details(request):
     video_id=request.GET.get("video_id")
-    recap_details=await utils.database_operations.get_recap_details(video_id)
+    recap_details=await utils.database_operations.get_fast_recap_details(video_id)
+    return JsonResponse(recap_details, safe=False)
+
+async def get_slow_recap_details(request):
+    video_id=request.GET.get("video_id")
+    recap_details=await utils.database_operations.get_slow_recap_details(video_id)
     return JsonResponse(recap_details, safe=False)
 
 

@@ -13,7 +13,7 @@ class DiscordMessageHandler:
     async def compile_discord_messages(video_ids):
         discord_messages=[]
         for video_id in video_ids:
-            recap_data=await utils.database_operations.get_recap_details(video_id)
+            recap_data=await utils.database_operations.get_fast_recap_details(video_id)
             if recap_data:
                 discord_messages.append(recap_data)
         

@@ -94,12 +94,10 @@ async def get_all_recaps_fast():
 class RecapDetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model = StreamRecapData
-        exclude = ['raw_transcript_data', 'linked_transcript', 'summarized_chunks']
+        fields=["video_id", "video_characteristics", "transcript", "recap", "text_chunks"]
 
-async def get_recap_details(video_id):
-    recap_data = await sync_to_async(
-        lambda: StreamRecapData.objects.defer('raw_transcript_data', 'linked_transcript', 'summarized_chunks').get(video_id=video_id)
-    )()
+async def get_fast_recap_details(video_id):
+    recap_data=await sync_to_async(StreamRecapData.objects.only('video_id','video_characteristics', 'transcript', 'recap', "text_chunks").get)(video_id=video_id)
     serialized_data = await sync_to_async(lambda: RecapDetailsSerializer(recap_data).data)()
 
     return serialized_data
@@ -120,6 +118,19 @@ async def get_linked_transcript(video_id):
         return serializer.validated_data
     else:
         return None
+    
+# Load the bigger/longer load time recap details
+class SlowRecapDetailsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StreamRecapData
+        fields=["video_id", "video_characteristics", "transcript", "recap", "text_chunks", "chunk_annotations", "plot_clickable_area_data", "plot_image"]
+async def get_slow_recap_details(video_id):
+    recap_data=await sync_to_async(StreamRecapData.objects.only('video_id','video_characteristics', 'transcript', 'recap', "text_chunks", "chunk_annotations", "plot_clickable_area_data", "plot_image").get)(video_id=video_id)
+    serialized_data = await sync_to_async(lambda: SlowRecapDetailsSerializer(recap_data).data)()
+
+    return serialized_data
+
+
     
 
 

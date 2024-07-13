@@ -18,6 +18,13 @@ class StreamRecapData(models.Model):
     recap= models.CharField(max_length=1000000,default="")
     recap_markdown= models.CharField(max_length=100000,default="")
 
+
+    chunk_annotations = models.JSONField(default=list)
+
+    plot_clickable_area_data = models.JSONField(default=list)
+
+    plot_image = models.CharField(max_length=2000000,default="")
+
     # returns a string representation of the object
     def __str__(self):
         data_str=""

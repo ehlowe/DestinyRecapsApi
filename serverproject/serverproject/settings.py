@@ -31,6 +31,12 @@ ALLOWED_HOSTS = ["destinyrecaps.com","localhost","127.0.0.1","3.135.118.64"]
 
 # Application definition
 
+
+MEDIA_URL = '/destinyapp/working_folder/stream_images/'
+MEDIA_ROOT = os.path.join(BASE_DIR, '/destinyapp/working_folder/stream_images/')
+
+
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
