@@ -2,6 +2,8 @@ import discord
 import html2text
 import traceback
 import os
+import io
+import base64
 
 # import from a directory below
 from .. import utils
@@ -13,7 +15,7 @@ class DiscordMessageHandler:
     async def compile_discord_messages(video_ids):
         discord_messages=[]
         for video_id in video_ids:
-            recap_data=await utils.database_operations.get_fast_recap_details(video_id)
+            recap_data=await utils.get_recap_data(video_id)
             if recap_data:
                 discord_messages.append(recap_data)
         
@@ -26,22 +28,36 @@ class DiscordMessageHandler:
             # Sends a single recap to a channel
             async def send_recap(self, recap, channel):
                 # Send discord message header
-                destinyrecaps_url="https://destinyrecaps.com"+"/details?video_id="+recap["video_id"]
+                destinyrecaps_url="https://destinyrecaps.com"+"/details?video_id="+recap.video_id
                 destinyrecaps_msg="Full transcript and embedding search at "+destinyrecaps_url
-                if recap.get("title",None)!=None:
-                    youtube_msg=recap["title"]+": "+"https://www.youtube.com/watch?v="+recap["video_id"]
+                if recap.video_characteristics.get("title",None)!=None:
+                    youtube_msg=recap.video_characteristics["title"]+": "+"https://www.youtube.com/watch?v="+recap.video_id
                 else:
-                    youtube_msg="https://www.youtube.com/watch?v="+recap["video_id"]
+                    youtube_msg="https://www.youtube.com/watch?v="+recap.video_id
 
-                header_message=f"{youtube_msg}\n{destinyrecaps_msg}"
-                await channel.send(header_message)
+                header_message=f".\n.\n.\n{youtube_msg}\n{destinyrecaps_msg}"
+
+                # send base64 image
+                if len(recap.plot_image)>100:
+                    # Decode the base64 image
+                    image_binary = base64.b64decode(recap.plot_image)
+                    image_file = discord.File(io.BytesIO(image_binary), filename="recap_image.png")
+                    await channel.send(header_message, file=image_file)
+                    # close the file
+                    image_file.fp.close()
+                else:
+                    await channel.send(header_message)
+
+                    
+                
+
 
                 # initialize variables for recap message
                 tag_message="@everyone \n"
                 if channel.name!="recaps":
                     tag_message=""
 
-                message_str=tag_message+html2text.html2text(recap["recap"])
+                message_str=tag_message+html2text.html2text(recap.recap)
                 start_index=0
                 recap_chunks={}
                 recap_chunks["start_finish"]=[0]
@@ -87,7 +103,7 @@ class DiscordMessageHandler:
                         if channel.name==os.environ.get("discord_channel"):
                             if channel:
                                 for recap in discord_recaps_to_send:
-                                    print("Sending Recap video_id: ",recap["video_id"], " to channel: ",channel.name)
+                                    print("Sending Recap video_id: ",recap.video_id, " to channel: ",channel.name)
                                     try:
                                         await self.send_recap(recap, channel)
                                     except Exception as e:

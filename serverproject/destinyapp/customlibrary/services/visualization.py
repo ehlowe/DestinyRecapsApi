@@ -331,7 +331,18 @@ from PIL import Image
 images_folder="destinyapp/working_folder/stream_plots/"
 background_color=1
 
-async def full_process(video_id):
+async def save_plot(video_id, base64_plot_image, clickable_areas, annotated_results):
+    stream_recap_data=await utils.get_recap_data(video_id)
+
+    stream_recap_data.plot_image=base64_plot_image
+    stream_recap_data.plot_clickable_area_data=clickable_areas
+    stream_recap_data.chunk_annotations=annotated_results
+
+    await sync_to_async(stream_recap_data.save)()
+
+
+
+async def generate_plot(video_id):
     stream_recap_data=await utils.get_recap_data(video_id)
 
     text_chunks_no_overlap = await create_text_chunks(stream_recap_data.transcript, 0)
@@ -350,11 +361,7 @@ async def full_process(video_id):
 
     clickable_areas, base64_plot_image = clickable_and_plot_image_finalization(video_id, clickable_areas)
 
-    stream_recap_data.plot_image=base64_plot_image
-    stream_recap_data.plot_clickable_area_data=clickable_areas
-    stream_recap_data.chunk_annotations=annotated_results
-
-    await sync_to_async(stream_recap_data.save)()
+    return base64_plot_image, clickable_areas, annotated_results
 
 
 async def create_segments(linked_transcript, annotated_results, major_topics):
@@ -420,7 +427,7 @@ async def create_segments(linked_transcript, annotated_results, major_topics):
         start_time=find_nearest_time_at_character_count(transcript_soup_character_counter, i*1000)
         width=end_time-start_time
         category_and_width_segments.append([annotated_segment, width, start_time, end_time])
-        print(f"Segment {i}: {annotated_segment}, {width}")
+        # print(f"Segment {i}: {annotated_segment}, {width}")
 
 
 

@@ -12,6 +12,7 @@ urlpatterns = [
 
 
     path('generate_recap', views.auto_recaps_request, name='generate_recap'),
+    path('update', views.recap_update_request, name='recap_update_request'),
 
     # Search View
     path('get_query_index',views.search, name='get_scroll_index'),

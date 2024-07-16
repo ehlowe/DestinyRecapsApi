@@ -23,7 +23,6 @@ from destinyapp.customlibrary import utils
 
 recap_generate_cache_lock_id = 'auto_recaps_generator_lock'
 
-
 from destinyapp.customlibrary import controller
 from rest_framework import serializers
 from destinyapp.models import StreamRecapData
@@ -113,6 +112,41 @@ async def cache_locked_recap_generate():
 
     cache.delete('auto_recaps_generator_lock')
     print("DELETED CACHE LOCK,  AUTO RECAPS FINISHED")
+
+
+
+
+# AUTO RECAPS VIEW
+@password_checker
+async def recap_update_request(request):    
+    # make thread for auto_recaps_generator
+    recap_generation_started=enqueue_recap_update()
+
+    if recap_generation_started:
+        return JsonResponse({"response":"Recaps Update Started"})
+    else:
+        return JsonResponse({"response":"Recaps Update Already Running"})
+def enqueue_recap_update():
+    if not cache.get(recap_generate_cache_lock_id):
+        cache.set(recap_generate_cache_lock_id, True, timeout=7200)
+        asyncio.create_task(cache_locked_recap_update())
+        return True
+    else:
+        return False
+async def cache_locked_recap_update():
+    try:
+        await controller.update_controller.update()
+
+    # print the error if any with as much information as possible
+    except Exception as e:
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        print("Controller update error")
+        print(repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
+        print(e)
+        print("End of Controller update error")
+
+    cache.delete(recap_generate_cache_lock_id)
+    print("DELETED CACHE LOCK,  UPDATE FINISHED")
 
 
 

@@ -20,4 +20,4 @@ from .misc import get_video_metadata, get_live_status
 
 from .search import search
 
-from .visualization import create_text_chunks
+from .visualization import create_text_chunks, generate_plot, save_plot
