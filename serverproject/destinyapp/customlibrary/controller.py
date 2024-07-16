@@ -167,7 +167,7 @@ class update_controller:
 
         await self.update_latest_plots(stream_recaps_limited) 
     
-    async def update_latest_plots(stream_recaps_limited, update_range=4, override=False):
+    async def update_latest_plots(stream_recaps_limited, update_range=int(os.environ.get("update_range")), override=False):
         # Get the video ids
         video_ids=[]
         for stream_recap in stream_recaps_limited:
