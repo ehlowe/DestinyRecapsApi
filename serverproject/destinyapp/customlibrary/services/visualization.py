@@ -525,7 +525,7 @@ async def create_and_save_plot(video_id, segments, category_locations, color_dic
     category_info = defaultdict(lambda: {"total_width": 0, "segments": []})
 
     bar_height = 1.5
-
+    bar_height = 1.0
 
     clickable_area_x_offset=0.085
     clickable_area_y_offset=0.1
@@ -571,13 +571,17 @@ async def create_and_save_plot(video_id, segments, category_locations, color_dic
     # Calculate Circle Padding
     circle_zone_size=9
     circle_y = 3.5
+    circle_y = 2.78
     circle_size_variable = 0.15
+    circle_size_variable = 0.13
+    circle_base_size_variable=0.3
+    circle_base_size_variable=0.41
 
     current_x=(target_plot_width-circle_zone_size)/2
     circle_x_locations={}
     total_circles_width=0
     def get_circle_width(total_width):
-        return (((np.sqrt(total_width) * circle_size_variable)*2)+0.3)
+        return (((np.sqrt(total_width) * circle_size_variable)*2)+circle_base_size_variable)
 
     for category, info in category_info.items():
         if category == 'non categorized':
@@ -592,7 +596,8 @@ async def create_and_save_plot(video_id, segments, category_locations, color_dic
 
 
     alterating_bool=False
-    vertical_offset=0
+    vertical_offset_value=0.5
+    vertical_offset_value=0.65
     circle_centers = []
     for category, info in category_info.items():
         if category == 'non categorized':
@@ -604,9 +609,9 @@ async def create_and_save_plot(video_id, segments, category_locations, color_dic
         circle_x = current_x + circle_applied_size
         if alterating_bool:
             alterating_bool=False
-            vertical_offset=-0.5
+            vertical_offset=-vertical_offset_value
         else:
-            vertical_offset=0.5
+            vertical_offset=vertical_offset_value
             alterating_bool=True
 
         # Store circle center, color, and size for later use
@@ -642,6 +647,7 @@ async def create_and_save_plot(video_id, segments, category_locations, color_dic
 
     # Add central white circle
     central_y = 6
+    central_y = 5
     central_circle = plt.Circle((total_width/2, central_y), 0.25, 
                                 facecolor='white', edgecolor='black', zorder=12)
     ax.add_artist(central_circle)
@@ -662,13 +668,13 @@ async def create_and_save_plot(video_id, segments, category_locations, color_dic
     ax.set_aspect('equal', adjustable='box')
     ax.axis('off')
 
-    # Add a Legend
-    legend_handles = [plt.Rectangle((0, 0), 1, 1, color=color) for color in color_dict.values()]
-    legend_labels = list(color_dict.keys())
-    ax.legend(legend_handles, legend_labels, loc='upper left', frameon=False)
-    # increase legend font size
-    plt.setp(ax.get_legend().get_texts(), fontsize='21')
-    plt.tight_layout()
+    # # Add a Legend
+    # legend_handles = [plt.Rectangle((0, 0), 1, 1, color=color) for color in color_dict.values()]
+    # legend_labels = list(color_dict.keys())
+    # ax.legend(legend_handles, legend_labels, loc='upper left', frameon=False)
+    # # increase legend font size
+    # plt.setp(ax.get_legend().get_texts(), fontsize='21')
+    # plt.tight_layout()
 
     # save plot
     global images_folder
