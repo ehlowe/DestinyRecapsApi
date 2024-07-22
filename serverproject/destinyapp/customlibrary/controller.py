@@ -167,7 +167,7 @@ class update_controller:
     async def update(self):
         stream_recaps_limited = await utils.get_all_recaps_fast()
 
-        override=str_to_bool(os.environ.get("update_over_bool", "False"))
+        override=str_to_bool(os.environ.get("update_over_bool", "false"))
 
         await self.update_latest_plots(stream_recaps_limited, override) 
     
@@ -176,6 +176,7 @@ class update_controller:
         video_ids=[]
         for stream_recap in stream_recaps_limited:
             video_ids.append(stream_recap["video_id"])
+        print("Video Ids to potentially update: ", video_ids)
 
         for video_id in video_ids[0:update_range]:
             # get stream recap data
@@ -190,6 +191,8 @@ class update_controller:
                 except Exception as e:
                     print("Error in update_controller.update_process for plot generation: ", e)
                     traceback.print_exc()
+            else:
+                print("Plot already exists for: ", video_id)
 
 
 
