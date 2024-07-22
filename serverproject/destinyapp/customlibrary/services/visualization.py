@@ -205,18 +205,21 @@ def process_annotation_response(response_str, text_chunk_batch):
     matches = re.findall(pattern, response_str, re.MULTILINE)
     
     results = []
-    match_count=0
-    for match in matches:
-        segment_number = int(match[0])
-        category = match[2].strip()
-        annotation = match[1].strip()
-        results.append({
-            "segment": segment_number,
-            "category": category,
-            "annotation": annotation,
-            "text": text_chunk_batch[match_count]
-        })
-        match_count+=1
+    try:
+        match_count=0
+        for match in matches:
+            segment_number = int(match[0])
+            category = match[2].strip()
+            annotation = match[1].strip()
+            results.append({
+                "segment": segment_number,
+                "category": category,
+                "annotation": annotation,
+                "text": text_chunk_batch[match_count]
+            })
+            match_count+=1
+    except Exception as e:
+        print("Error in process_annotation_response, continuing with blank results: ", e)
 
     # if the number of results is less than the number of text chunks then add blank results
     if len(results)!=len(text_chunk_batch):
