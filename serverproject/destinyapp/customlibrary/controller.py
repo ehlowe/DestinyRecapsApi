@@ -158,6 +158,8 @@ class auto_recap_controller:
 
 
 
+def str_to_bool(value):
+    return value.lower() in ('true', '1', 't', 'y', 'yes')
 
 
 class update_controller:
@@ -165,7 +167,9 @@ class update_controller:
     async def update(self):
         stream_recaps_limited = await utils.get_all_recaps_fast()
 
-        await self.update_latest_plots(stream_recaps_limited) 
+        override=str_to_bool(os.environ.get("update_over_bool", "False"))
+
+        await self.update_latest_plots(stream_recaps_limited, override) 
     
     async def update_latest_plots(stream_recaps_limited, update_range=int(os.environ.get("update_range")), override=False):
         # Get the video ids
