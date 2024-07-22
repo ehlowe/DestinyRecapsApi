@@ -217,7 +217,20 @@ def process_annotation_response(response_str, text_chunk_batch):
             "text": text_chunk_batch[match_count]
         })
         match_count+=1
-    print("Results: ", len(results))
+
+    # if the number of results is less than the number of text chunks then add blank results
+    if len(results)!=len(text_chunk_batch):
+        print("Results: ", len(results), "Text Chunks: ", len(text_chunk_batch), " Returning blank equal to text chunks length")
+        for i, text_chunk in enumerate(text_chunk_batch):
+            results.append({
+                "segment": str(i+1),
+                "category": "non categorized",
+                "annotation": "",
+                "text": text_chunk
+            })
+    else:
+        print("Results: ", len(results))
+
     
     return results
 
@@ -364,7 +377,7 @@ async def generate_plot(video_id):
     return base64_plot_image, clickable_areas, annotated_results
 
 
-async def create_segments(linked_transcript, annotated_results, major_topics):
+async def create_segments(linked_transcript, annotated_results, major_topics, transcript):
     soup = BeautifulSoup(linked_transcript, 'html.parser')
     soup_list=soup.find_all('a')
 
@@ -422,9 +435,14 @@ async def create_segments(linked_transcript, annotated_results, major_topics):
     # Get the widths of the segments
     category_and_width_segments=[]
     for i, annotated_segment in enumerate(category_segments):
+        text_to_search=annotated_results[i]["text"]
+        start_character_index=transcript.find(text_to_search)
+        stop_character_index=start_character_index+len(text_to_search)
+        start_time=find_nearest_time_at_character_count(transcript_soup_character_counter, start_character_index)
+        end_time=find_nearest_time_at_character_count(transcript_soup_character_counter, stop_character_index)
 
-        end_time=find_nearest_time_at_character_count(transcript_soup_character_counter, (i+1)*1000)
-        start_time=find_nearest_time_at_character_count(transcript_soup_character_counter, i*1000)
+        # end_time=find_nearest_time_at_character_count(transcript_soup_character_counter, (i+1)*1000)
+        # start_time=find_nearest_time_at_character_count(transcript_soup_character_counter, i*1000)
         width=end_time-start_time
         category_and_width_segments.append([annotated_segment, width, start_time, end_time])
         # print(f"Segment {i}: {annotated_segment}, {width}")
