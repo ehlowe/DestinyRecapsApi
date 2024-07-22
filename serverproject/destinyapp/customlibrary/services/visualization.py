@@ -368,7 +368,7 @@ async def generate_plot(video_id):
 
     responses, annotated_results=await annotate_all_batches(chunk_batches, topic_annotations_str)
     
-    segments, category_locations, color_dict = await create_segments(stream_recap_data.linked_transcript, annotated_results, major_topics)
+    segments, category_locations, color_dict = await create_segments(stream_recap_data.linked_transcript, annotated_results, major_topics, stream_recap_data.transcript)
 
     clickable_areas=await create_and_save_plot(video_id, segments, category_locations, color_dict)
 
