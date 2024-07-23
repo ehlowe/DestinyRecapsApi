@@ -6,9 +6,14 @@ class StreamBot:
     chat_history=[]
 
     @classmethod
-    async def answer_user(self, video_id, user_prompt, test=None):
+    async def answer_user(self, video_id, test=None):
 
         stream_recap_data=await utils.get_recap_data(video_id)
+
+        if self.chat_history[-1]["role"]=="user":
+            user_prompt=self.chat_history[-1]["content"]
+        else:
+            return "Error: The last message in the chat history is not from the user."
 
         search_results=await services.search(video_id, user_prompt, k_size=10)#, vector_db, text_chunks 
 
@@ -60,12 +65,11 @@ class StreamBot:
         """.format(stream_recap=stream_recap_data.recap, rag_context=rag_context_str)
 
         if self.chat_history==[]:
-            self.chat_history=[{"role":"system", "content":system_prompt}, {"role":"user", "content":user_prompt}]
+            self.chat_history=[{"role":"user", "content":user_prompt}]
         else:
-            self.chat_history[0]["content"]=system_prompt
             self.chat_history.append({"role":"user", "content":user_prompt})
 
-        response, cost=await utils.async_response_handler(self.chat_history, utils.ModelNameEnum.gpt_4o_mini)
+        response, cost=await utils.async_response_handler([{'role':'system','content':system_prompt}]+self.chat_history, utils.ModelNameEnum.gpt_4o_mini)
         self.chat_history.append({"role":"system", "content":response})
 
         print("Cost: ",cost)

@@ -11,6 +11,9 @@ urlpatterns = [
     # Search View
     path('get_query_index',views.search, name='get_scroll_index'),
 
+    # Chat view
+    path('chatbot_response', views.chatbot_response, name='chatbot_response'),
+
     # Recap Generation Views
     path('generate_recap', views.auto_recaps_request, name='generate_recap'),
     path('update', views.recap_update_request, name='recap_update_request'),
