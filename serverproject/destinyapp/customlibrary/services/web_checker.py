@@ -41,6 +41,7 @@ async def web_view_recent_stream_ids():
         video_ids = [match.group(1) for match in re.finditer(pattern, html_content)]
         print("ALL YT IDS:",video_ids)
         video_ids=video_ids[:3]
+        video_ids.reverse()
 
         # Close the browser
         driver.quit()

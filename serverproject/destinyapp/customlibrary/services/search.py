@@ -18,7 +18,7 @@ async def load_vectordb(video_id):
     index = faiss.read_index(index_path)
     return index
 
-async def search_vectordb(vector_db, query):
+async def search_vectordb(vector_db, query, k_size=5):
     """
     Searches given vectordb with query
     
@@ -27,13 +27,13 @@ async def search_vectordb(vector_db, query):
     query_embedding = await utils.async_openai_client.embeddings.create(input=query,model="text-embedding-3-large")
     query_embedding_np = np.array(query_embedding.data[0].embedding).astype('float32').reshape(1, -1)
     k=vector_db.ntotal
-    if k>5:
-        k=5
+    if k>k_size:
+        k=k_size
 
     D, I = vector_db.search(query_embedding_np, k)
     return (D,I)
 
-async def search(video_id, query):
+async def search(video_id, query, k_size=5):
     # get transcript_data
     transcript_data=await utils.get_plain_transcript(video_id)
 
@@ -43,7 +43,7 @@ async def search(video_id, query):
             index = await load_vectordb(video_id)
 
             # search vector db
-            d,i=await search_vectordb(index, query)
+            d,i=await search_vectordb(index, query, k_size=k_size)
 
             # get index of query in transcript
             query_character_index=transcript_data.transcript.find(transcript_data.text_chunks[i[0][0]])

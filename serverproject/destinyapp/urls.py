@@ -8,20 +8,25 @@ urlpatterns = [
     path('recaps/', views.get_all_recaps),
     path('recap_details', views.get_recap_details, name='get_recap_details'),
     path('linked_transcript', views.get_linked_transcript, name='get_linked_transcript'),
+    path('slow_recap_details', views.get_slow_recap_details, name='get_slow_recap_details'),
 
 
     path('generate_recap', views.auto_recaps_request, name='generate_recap'),
+    path('update', views.recap_update_request, name='recap_update_request'),
 
     # Search View
     path('get_query_index',views.search, name='get_scroll_index'),
 
 
+    path('dl', views.download_stream_recap_data, name='download_stream_recap_data'),
 
     # download stream data
     path('dl', views.download_stream_recap_data, name='download_stream_data'),
 
 
 
+
+    path('delete_stream_recap_data', views.delete_stream_recap_data, name='delete_stream_recap_data'),
 
 
 
