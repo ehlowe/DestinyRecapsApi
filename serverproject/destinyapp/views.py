@@ -76,22 +76,22 @@ from django.views.decorators.csrf import csrf_exempt
 # Chat View
 @csrf_exempt
 async def chatbot_response(request):
-
     # get the url parameters from the request
     video_id=request.GET.get("video_id")
-    pin=request.GET.get("pin")
     print("video_id", video_id)
-    print("pin", pin)
+    pin=request.GET.get("pin")
 
     if pin=="194":
         # load the chat history from the request body as json
         chat_history_string=request.body.decode("utf-8")
         chat_history=json.loads(chat_history_string)
 
+        print(chat_history)
+
         stream_bot=services.StreamBot()
-        stream_bot.chat_history=chat_history
-        response=await stream_bot.answer_user(video_id)
-        return JsonResponse({"response":response}, safe=False)
+        response=await stream_bot.answer_user(chat_history, video_id)
+
+        return JsonResponse({"role":"assistant", "content":response}, safe=False)
     else:
         return JsonResponse({"status":"incorrect pin"}, safe=False)
 
