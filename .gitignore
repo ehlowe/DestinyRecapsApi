@@ -20,3 +20,6 @@ __pycache__
 
 # testing ignores
 /serverproject/destinyapp/misc/testing_notebooks
+
+# local ignores
+/local

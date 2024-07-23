@@ -1,13 +1,22 @@
+# Base Imports
 import os
 import sys
 import traceback
+import asyncio
+
 
 # Django imports
 from django.http import JsonResponse
 from django.core.cache import cache
+recap_generate_cache_lock_id = 'auto_recaps_generator_lock'
+download_lock_id = 'download_lock'
+
 
 # Django Rest Framework imports
 from rest_framework.response import Response
+from rest_framework import serializers
+from rest_framework.decorators import api_view
+
 
 # define the boolean values
 def str_to_bool(value):
@@ -18,32 +27,18 @@ delete_enabled=str_to_bool(os.environ.get("delete_enabled",""))
 
 
 # Custom Imports
-#from destinyapp.middleware import password_checker
 from destinyapp.customlibrary import utils
-
-recap_generate_cache_lock_id = 'auto_recaps_generator_lock'
-download_lock_id = 'download_lock'
-
 from destinyapp.customlibrary import controller
-from rest_framework import serializers
-from destinyapp.models import StreamRecapData
 from destinyapp.customlibrary import services
-
+from destinyapp.models import StreamRecapData
 from destinyapp.middleware import password_checker
 
 
-
-# make a serializer class
+# Make a serializer class
 class StreamRecapDataSerializer(serializers.ModelSerializer):
     class Meta:
         model = StreamRecapData
         fields = '__all__'
-
-
-
-
-import asyncio
-from rest_framework.decorators import api_view
 
 
 # PAGE LOADING VIEWS
@@ -67,15 +62,12 @@ async def get_slow_recap_details(request):
     return JsonResponse(recap_details, safe=False)
 
 
-
 # Search View
 async def search(request):
     video_id=request.GET.get("video_id")
     query=request.GET.get("query")
     search_results=await services.search(video_id, query)
     return JsonResponse(search_results, safe=False)
-
-
 
 
 
@@ -113,6 +105,8 @@ async def cache_locked_recap_generate():
 
     cache.delete('auto_recaps_generator_lock')
     print("DELETED CACHE LOCK,  AUTO RECAPS FINISHED")
+
+
 
 
 
@@ -155,7 +149,7 @@ async def cache_locked_recap_update():
 
 
 
-# serialize the stream_recap_data
+# Download Stream Recap Data
 async def serialize_stream_recap_data(stream_recap_data):
     serialized_data = StreamRecapDataSerializer(stream_recap_data).data
     return serialized_data
@@ -203,10 +197,7 @@ async def download_stream_recap_data(request):
 
 
 
-
-
-
-
+# Delete Stream Recap Data
 @password_checker
 async def delete_stream_recap_data(request):
     video_id=request.GET.get("video_id")
