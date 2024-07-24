@@ -25,6 +25,28 @@ SECRET_KEY = os.environ.get("django_secret_key")
 
 # # SECURITY WARNING: don't run with debug turned on in production!
 # DEBUG = True
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': False,
+#     'handlers': {
+#         'console': {
+#             'class': 'logging.StreamHandler',
+#         },
+#     },
+#     'root': {
+#         'handlers': ['console'],
+#         'level': 'DEBUG',
+#     },
+#     'loggers': {
+#         'django': {
+#             'handlers': ['console'],
+#             'level': 'DEBUG',
+#             'propagate': False,
+#         },
+#     },
+# }
+
+
 
 ALLOWED_HOSTS = ["destinyrecaps.com","localhost","127.0.0.1","3.135.118.64"]
 

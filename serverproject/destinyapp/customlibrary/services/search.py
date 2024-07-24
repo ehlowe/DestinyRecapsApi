@@ -2,6 +2,7 @@ import os
 import traceback
 
 import faiss
+import json
 import numpy as np
 
 from .. import utils
@@ -72,18 +73,28 @@ async def all_search(query, k_size=5):
 
     d, i=await search_vectordb(index, query, k_size=k_size)
 
-    filtered_recaps=[]
-    for recap in all_recaps:
-        if recap.get("recap", None):
-            filtered_recaps.append(recap)
+    # load video_id mapping from json
+    with open("destinyapp/working_folder/vectordbs/master_all.json", "r") as f:
+        ids_mapping=json.load(f)
 
+    recap_dict={}
+    for recap in all_recaps:
+        recap_dict[recap["video_id"]]=recap["recap"]
+
+    unique_search_results=set()
     all_search_results=[]
     for index_value in i[0]:
-        recap=filtered_recaps[index_value].get("recap", None)
+        video_id=ids_mapping[str(index_value)]
+        recap=recap_dict.get(video_id, None)
         if recap:
-            all_search_results.append({"recap":filtered_recaps[index_value]["recap"], "video_id":filtered_recaps[index_value]["video_id"]})
+            if not video_id in unique_search_results:
+                unique_search_results.add(video_id)
+                all_search_results.append({"recap":recap, "video_id": video_id})
         else:
-            print("Empty Recap: ", filtered_recaps[index_value]["video_id"])
+            print("Empty Recap: ", video_id)
             all_search_results.append({"recap":"Empty", "video_id":None})
+
+        if len(all_search_results)>=6:
+            break
 
     return all_search_results

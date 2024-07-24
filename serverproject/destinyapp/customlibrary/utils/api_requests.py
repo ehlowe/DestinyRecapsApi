@@ -52,18 +52,30 @@ async def async_response_handler(
     temp=0.0,
     frequency_penalty=0,
     presence_penalty=0,
+    max_tokens=None
 ) -> tuple[str, float]:
     model_company=model_name_company_mapping.get(model_name,None)
 
     if model_company==ModelCompanyEnum.openai:
-        response = await async_openai_client.chat.completions.create(
-                model=model_name,
-                messages=prompt,
-                temperature=temp,
-                top_p=1,
-                frequency_penalty=frequency_penalty,
-                presence_penalty=presence_penalty,
-            )
+        if max_tokens:
+            response = await async_openai_client.chat.completions.create(
+                    model=model_name,
+                    messages=prompt,
+                    temperature=temp,
+                    top_p=1,
+                    frequency_penalty=frequency_penalty,
+                    presence_penalty=presence_penalty,
+                )
+        else:
+            response = await async_openai_client.chat.completions.create(
+                    model=model_name,
+                    messages=prompt,
+                    temperature=temp,
+                    top_p=1,
+                    frequency_penalty=frequency_penalty,
+                    presence_penalty=presence_penalty,
+                    max_tokens=max_tokens
+                )
         
         cost=prompt_and_response_cost(prompt, response.choices[0].message.content, model_name)
 

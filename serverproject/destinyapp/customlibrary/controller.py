@@ -2,7 +2,7 @@ import time
 import os
 from destinyapp.models import StreamRecapData
 import asyncio
-from asgiref.sync import sync_to_async
+from asgiref.sync import sync_to_async, async_to_sync
 import traceback
 
 from . import services
@@ -24,6 +24,8 @@ class auto_recap_controller:
 
             if discord_message_video_ids!=[]:
                 await self.send_discord_messages(discord_message_video_ids)
+
+        await services.vector_db_and_text_chunks.AllRecapsVectorDB.write_master_all()
 
 
 
@@ -169,7 +171,11 @@ class update_controller:
 
         override=str_to_bool(os.environ.get("update_over_bool", "false"))
 
-        await self.update_latest_plots(stream_recaps_limited, override=override) 
+        # # Update the latest plots
+        # await self.update_latest_plots(stream_recaps_limited, override=override) 
+
+        # Update the transcript processing
+        await self.update_transcript_processing(stream_recaps_limited)
     
     async def update_latest_plots(stream_recaps_limited, update_range=int(os.environ.get("update_range")), override=False):
         # Get the video ids
@@ -194,6 +200,23 @@ class update_controller:
             else:
                 print("Plot already exists for: ", video_id)
 
+
+    async def update_transcript_processing(stream_recaps_limited, update_range=int(os.environ.get("update_range"))):
+        # Process Raw Transcript
+        video_ids=[]
+        for stream_recap in stream_recaps_limited:
+            video_ids.append(stream_recap["video_id"])
+
+        for video_id in video_ids[0:update_range]:
+            try:
+                stream_recap_data=await utils.get_recap_data(video_id)
+                transcript, linked_transcript = await services.process_raw_transcript(stream_recap_data.raw_transcript_data, video_id)
+                stream_recap_data.transcript=transcript
+                stream_recap_data.linked_transcript=linked_transcript
+                await sync_to_async(stream_recap_data.save)()
+            except Exception as e:
+                print("Error in update_controller.update_process for transcript processing: ", e)
+                traceback.print_exc()
 
 
 

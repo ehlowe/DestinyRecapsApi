@@ -1,5 +1,6 @@
 import os
 import asyncio
+import json
 import numpy as np
 import faiss
 
@@ -133,10 +134,28 @@ class AllRecapsVectorDB:
     @classmethod
     async def write_master_all(self):
         all_recaps=await utils.get_all_recaps_fast()
+
+        segment_length=240
+        overlap_length=40
+
+
         recaps_to_write=[]
+        ids_mapping={}
+        counter=0
         for recap in all_recaps:
             if recap.get("recap", None):
-                recaps_to_write.append(recap["recap"])
+                raw_recap_str=recap["recap"]
+                recap_segments=[]
+                for i in range(0, len(raw_recap_str), (segment_length-overlap_length)):
+                    ids_mapping[counter]=recap["video_id"]
+                    counter+=1
+                    recap_segments.append(raw_recap_str[i:i+segment_length])
+                
+                recaps_to_write+=recap_segments
+
+        # write ids_mapping to json
+        with open("destinyapp/working_folder/vectordbs/master_all.json", "w") as f:
+            json.dump(ids_mapping, f)
 
         vector_db=await self.make_vector_db_fast(recaps_to_write)
 
