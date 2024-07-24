@@ -95,6 +95,32 @@ async def chatbot_response(request):
     else:
         return JsonResponse({"status":"incorrect pin"}, safe=False)
 
+@csrf_exempt
+async def homepage_chatbot_response(request):
+    # get the url parameters from the request
+    # video_id=request.GET.get("video_id")
+    # print("video_id", video_id)
+    pin=request.GET.get("pin")
+    print("pin", pin)
+
+    if pin=="194":
+        # load the chat history from the request body as json
+        chat_history_string=request.body.decode("utf-8")
+        chat_history=json.loads(chat_history_string)
+
+        print(chat_history)
+        try:
+            stream_bot=services.StreamBot()
+            response=await stream_bot.allbot_response(chat_history)
+
+            return JsonResponse({"role":"assistant", "content":response}, safe=False)
+        
+        # use traceback to get the error details
+        except Exception as e:
+            traceback.print_exc()
+            print(e)
+
+    return JsonResponse({"status":"incorrect pin"}, safe=False)
 
 
 

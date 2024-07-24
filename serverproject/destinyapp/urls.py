@@ -13,6 +13,7 @@ urlpatterns = [
 
     # Chat view
     path('chatbot_response', views.chatbot_response, name='chatbot_response'),
+    path('homepage_chatbot_response', views.homepage_chatbot_response, name='homepage_chatbot_response'),
 
     # Recap Generation Views
     path('generate_recap', views.auto_recaps_request, name='generate_recap'),

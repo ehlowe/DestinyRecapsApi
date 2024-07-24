@@ -61,3 +61,29 @@ async def search(video_id, query, k_size=5):
         print(traceback.format_exc())
 
         return {}
+    
+
+async def all_search(query, k_size=5):
+    # get all video_ids
+    all_recaps=await utils.get_all_recaps_fast()
+
+    # create dict to hold all search results
+    index = await load_vectordb("master_all")
+
+    d, i=await search_vectordb(index, query, k_size=k_size)
+
+    filtered_recaps=[]
+    for recap in all_recaps:
+        if recap.get("recap", None):
+            filtered_recaps.append(recap)
+
+    all_search_results=[]
+    for index_value in i[0]:
+        recap=filtered_recaps[index_value].get("recap", None)
+        if recap:
+            all_search_results.append({"recap":filtered_recaps[index_value]["recap"], "video_id":filtered_recaps[index_value]["video_id"]})
+        else:
+            print("Empty Recap: ", filtered_recaps[index_value]["video_id"])
+            all_search_results.append({"recap":"Empty", "video_id":None})
+
+    return all_search_results
