@@ -318,7 +318,7 @@ def process_topic_annotations_str(topic_annotations_str):
 
 
 from dataclasses import dataclass, field
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 @dataclass
 class Segment:
@@ -335,6 +335,10 @@ class Segment:
 class Abstraction:
     width: float
     color: str
+    
+    x: float
+    y: float
+    size: float
 
 @dataclass
 class TimeNormalization:
@@ -346,7 +350,7 @@ class TimeNormalization:
 class PlotObject:
     segments: List[Segment] = field(default_factory=list)
     abstractions: Dict[str, Abstraction] = field(default_factory=dict)
-    time_normalization: TimeNormalization = TimeNormalization(0, 0)
+    time_normalization: Optional[TimeNormalization] = field(default=None)
 
 
 
@@ -518,7 +522,7 @@ async def create_segments(linked_transcript, annotated_results, major_topics, tr
 
     # Normalize circle widths
     circle_mutlipler=total_width/total_width_circle
-    width_mutliplier=10/total_width
+    width_mutliplier=1/total_width
     for segment in segments:
         segment["width"]=segment["width"]*width_mutliplier
 
@@ -531,7 +535,7 @@ async def create_segments(linked_transcript, annotated_results, major_topics, tr
             temp_locations.append(segment["width"]/2+x_location)
             category_locations[segment["category"]]=temp_locations
         else:
-            category_locations[segment["category"]]=10
+            category_locations[segment["category"]]=1
 
         x_location+=segment["width"]
 
