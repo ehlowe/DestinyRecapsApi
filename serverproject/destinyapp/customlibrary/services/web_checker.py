@@ -24,7 +24,9 @@ async def web_view_recent_stream_ids():
 
     # Create a Service instance with ChromeDriverManager
     service = Service(ChromeDriverManager().install())
-
+    if "THIRD_PARTY_NOTICES" in service.path:
+        service = Service(service.path.replace("THIRD_PARTY_NOTICES.chromedriver", "chromedriver.exe"))
+    
     # Initialize the Chrome WebDriver with the specified service and options
     driver = webdriver.Chrome(service=service, options=options)
 
@@ -54,3 +56,53 @@ async def web_view_recent_stream_ids():
         print("Driver closed, Error: ",e)
 
         video_ids=[]
+
+
+
+
+async def web_get_recap_image():
+    options = Options()
+    options.add_argument('--headless')
+    options.add_argument('--disable-gpu')
+    options.add_argument('--no-sandbox')
+
+    # Create a Service instance with ChromeDriverManager
+    service = Service(ChromeDriverManager().install())
+    if "THIRD_PARTY_NOTICES" in service.path:
+        service = Service(service.path.replace("THIRD_PARTY_NOTICES.chromedriver", "chromedriver.exe"))
+
+    # Initialize the Chrome WebDriver with the specified service and options
+    driver = webdriver.Chrome(service=service, options=options)
+
+    driver.implicitly_wait(10)
+
+    try:
+        # Go to the page
+        # driver.get("https://vyneer.me/vods/")
+
+        driver.get("http://localhost:5173/details?video_id=OqVH_MTBQ6k")
+
+        await asyncio.sleep(5)
+
+        # Now the page is fully loaded, including content loaded via JavaScript 
+        html_content = driver.page_source
+
+
+
+        # Get the image
+        svg_element = driver.find_element(By.CSS_SELECTOR, "svg")
+
+        svg_element.screenshot("recap_image.png")
+
+
+
+
+
+
+        # Close the browser
+        driver.quit()
+        print("Driver closed")
+
+    except Exception as e:
+        driver.quit()
+        print("Driver closed")

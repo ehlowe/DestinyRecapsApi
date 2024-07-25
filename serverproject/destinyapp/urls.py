@@ -24,4 +24,7 @@ urlpatterns = [
 
     # delete stream data
     path('delete_stream_recap_data', views.delete_stream_recap_data, name='delete_stream_recap_data'),
+
+    # save png
+    path('save_png', views.save_image, name='save_png'),
 ]
