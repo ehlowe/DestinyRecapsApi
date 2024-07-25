@@ -12,6 +12,7 @@ model_name_company_mapping={
     "gpt-4-turbo": "openai",
     "gpt-4o": "openai",
     "gpt-4o-mini": "openai",
+    "ft:gpt-4o-mini-2024-07-18:personal::9oMM1Fxh": "openai",
     "gpt-3.5-turbo": "openai",
     "claude-3-5-sonnet-20240620": "anthropic",
     "claude-3-sonnet-20240229": "anthropic",
@@ -25,6 +26,7 @@ class ModelNameEnum(str, Enum):
     gpt_4_turbo = "gpt-4-turbo"
     gpt_4o = "gpt-4o"
     gpt_4o_mini = "gpt-4o-mini"
+    gpt_4o_mini_tune = "ft:gpt-4o-mini-2024-07-18:personal::9oMM1Fxh"
     gpt_3_5_turbo = "gpt-3.5-turbo"
     claude_3_5_sonnet = "claude-3-5-sonnet-20240620"
     claude_3_sonnet = "claude-3-sonnet-20240229"
@@ -34,6 +36,7 @@ class ModelCostEnum(str, Enum):
     gpt_4_turbo = {"input": 10/1000000.0, "output": 30/1000000.0}
     gpt_4o = {"input": 5/1000000.0, "output": 20/1000000.0}
     gpt_4o_mini = {"input": 0.3/1000000.0, "output": 0.6/1000000.0}
+    gpt_4o_mini_tune = {"input": 0.3/1000000.0, "output": 1.2/1000000.0}
     gpt_3_5_turbo = {"input": 1/1000000.0, "output": 8/1000000.0}
     claude_3_5_sonnet = {"input": 3/1000000.0, "output": 15/1000000.0}
     claude_3_sonnet = {"input": 3/1000000.0, "output": 15/1000000.0}
@@ -49,18 +52,30 @@ async def async_response_handler(
     temp=0.0,
     frequency_penalty=0,
     presence_penalty=0,
+    max_tokens=None
 ) -> tuple[str, float]:
     model_company=model_name_company_mapping.get(model_name,None)
 
     if model_company==ModelCompanyEnum.openai:
-        response = await async_openai_client.chat.completions.create(
-                model=model_name,
-                messages=prompt,
-                temperature=temp,
-                top_p=1,
-                frequency_penalty=frequency_penalty,
-                presence_penalty=presence_penalty,
-            )
+        if max_tokens:
+            response = await async_openai_client.chat.completions.create(
+                    model=model_name,
+                    messages=prompt,
+                    temperature=temp,
+                    top_p=1,
+                    frequency_penalty=frequency_penalty,
+                    presence_penalty=presence_penalty,
+                )
+        else:
+            response = await async_openai_client.chat.completions.create(
+                    model=model_name,
+                    messages=prompt,
+                    temperature=temp,
+                    top_p=1,
+                    frequency_penalty=frequency_penalty,
+                    presence_penalty=presence_penalty,
+                    max_tokens=max_tokens
+                )
         
         cost=prompt_and_response_cost(prompt, response.choices[0].message.content, model_name)
 

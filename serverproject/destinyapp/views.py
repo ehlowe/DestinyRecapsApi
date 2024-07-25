@@ -2,7 +2,12 @@
 import os
 import sys
 import traceback
+import time
 import asyncio
+import json
+
+# import logging
+# logger = logging.getLogger(__name__)
 
 
 # Django imports
@@ -68,6 +73,71 @@ async def search(request):
     query=request.GET.get("query")
     search_results=await services.search(video_id, query)
     return JsonResponse(search_results, safe=False)
+
+
+
+from django.views.decorators.csrf import csrf_exempt
+from asgiref.sync import sync_to_async, async_to_sync
+
+# Chat View
+@sync_to_async
+@csrf_exempt
+@async_to_sync
+async def chatbot_response(request):
+    # get the url parameters from the request
+    try:
+        t_start=time.time()
+        video_id=request.POST.get("video_id")
+        print("video_id", video_id)
+        pin=request.POST.get("pin")
+        print("pin", pin)
+
+        if pin=="194":
+            # load the chat history from the request body as json
+            chat_history_string=request.POST.get('chat_history')
+            chat_history=json.loads(chat_history_string)
+
+            stream_bot=services.StreamBot()
+            response=await stream_bot.answer_user(chat_history, video_id)
+            print("Time to respond: ", time.time()-t_start)
+
+            return JsonResponse({"role":"assistant", "content":response}, safe=False)
+    except Exception as e:
+        print(e)
+        traceback.print_exc()
+    
+
+    return JsonResponse({"status":"Something went wrong"}, safe=False)
+
+@sync_to_async
+@csrf_exempt
+@async_to_sync
+async def homepage_chatbot_response(request):
+    try:
+        pin=request.POST.get("pin")
+        print("pin", pin)
+
+        if pin=="194":
+            # load the chat history from the request body as json
+            chat_history_string=request.POST.get('chat_history')
+            chat_history=json.loads(chat_history_string)
+
+            print(chat_history)
+            try:
+                stream_bot=services.StreamBot()
+                response=await stream_bot.allbot_response(chat_history)
+
+                return JsonResponse({"role":"assistant", "content":response}, safe=False)
+            
+            # use traceback to get the error details
+            except Exception as e:
+                traceback.print_exc()
+                print(e)
+    except Exception as e:
+        print(e)
+        traceback.print_exc()
+
+    return JsonResponse({"status":"incorrect pin"}, safe=False)
 
 
 

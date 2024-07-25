@@ -168,11 +168,22 @@ async def process_raw_transcript(input_raw_transcript, video_id):
         
     # Create Base Transcript
     transcript=""
-    for utterance in raw_transcript:
+    for i in range(len(raw_transcript)):
+        utterance=raw_transcript[i]
         speaker=utterance["speaker"]
         if speaker=="A":
             speaker="Destiny"
-        transcript+=speaker+": "+utterance["text"]
+
+        prev_word_stop=None
+        utterance_text=""
+        for j in range(len(raw_transcript[i]["words"])):
+            if prev_word_stop and ((raw_transcript[i]["words"][j]["start"]-prev_word_stop)>2000):
+                raw_transcript[i]["words"][j]["text"]="\n"+raw_transcript[i]["words"][j]["text"]
+            utterance_text+=raw_transcript[i]["words"][j]["text"]+" "
+            prev_word_stop=raw_transcript[i]["words"][j]["end"]
+
+        raw_transcript[i]["text"]=utterance_text
+        transcript+=speaker+": "+raw_transcript[i]["text"]
         transcript+="\n\n"
 
     # Create Linked Transcript
@@ -194,7 +205,17 @@ async def process_raw_transcript(input_raw_transcript, video_id):
             #</a><a href="https://www.youtube.com/watch?v=PTjCp3RJ4ag&t=5416s" target="_blank">
             if i==len(utterance["words"])-1:
                 temp_text=temp_text.strip()+"\n\n"
-            html_transcript_text+="<a href=\""+link+"\" target=\"_blank\" class=\"underline-hover\">"+temp_text+"</a>"
+            
+            added_link="<a href=\""+link+"\" target=\"_blank\" class=\"underline-hover\">"+temp_text+"</a>"
+
+            # if it is the last word in the utterance
+            if i!=len(utterance["words"])-1:
+                if "\n" in temp_text:
+                    new_lines+=1
+                    added_link="<br/>"+added_link
+
+            # add the link to the html_transcript_text
+            html_transcript_text+=added_link
 
                 
         linked_transcript+=speaker+": "+html_transcript_text
