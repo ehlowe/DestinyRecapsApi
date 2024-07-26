@@ -331,6 +331,9 @@ class Segment:
 
     x: float
 
+    texts: List[str]
+    annotations: List[str]
+
 @dataclass
 class Abstraction:
     width: float

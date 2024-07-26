@@ -157,6 +157,13 @@ class auto_recap_controller:
         await services.DiscordMessageHandler.send_discord_recaps(discord_recaps_to_send)
 
 
+    # Generate Stream Plot
+    async def generate_stream_plot(video_id):
+        stream_recap_data=await utils.get_recap_data(video_id)
+
+        services.generate_strean_plot_data(stream_recap_data)
+
+
 
 
 
