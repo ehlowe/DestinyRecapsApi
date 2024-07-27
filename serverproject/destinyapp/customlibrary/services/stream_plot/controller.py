@@ -1,5 +1,6 @@
 from . import data_gen, data_processing, data_plotting
 
+from destinyapp.customlibrary import utils
 from destinyapp.models import StreamRecapData
 
 class StreamPlotController:
@@ -16,8 +17,6 @@ class StreamPlotController:
         return annotated_results, major_topics, minor_topics
     
     async def process_data(stream_recap_data: StreamRecapData, annotated_results, major_topics, minor_topics, video_id):
-
-
         annotated_segments, category_locations = await data_processing.create_segments(stream_recap_data.linked_transcript, annotated_results, major_topics, stream_recap_data.transcript)
 
         plot_segments=await data_processing.annotated_to_plot_segments(annotated_segments)
@@ -28,3 +27,12 @@ class StreamPlotController:
     
     async def generate_plot(plot_object):
         return await data_plotting.generate_plot(plot_object)
+    
+async def run(self, video_id):
+    stream_recap_data=await utils.get_recap_data(video_id)
+
+    annotated_results, major_topics, minor_topics = await StreamPlotController.generate_data(stream_recap_data)
+
+    plot_object, annotated_results, plot_segments, category_locations = await StreamPlotController.process_data(stream_recap_data,  annotated_results, major_topics, minor_topics, video_id)
+
+    await StreamPlotController.generate_plot(plot_object)

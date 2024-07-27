@@ -328,20 +328,28 @@ async def create_plot_object(plot_segments, category_locations, video_id):
         plot_object.segments[i].x=(((plot_object.segments[i].start_time+plot_object.segments[i].end_time)/2)-plot_object.time_normalization.start_offset)/plot_object.time_normalization.net_duration
         # plot_object.segments[i].x=(plot_object.segments[i].x-plot_object.time_normalization.start_offset)/plot_object.time_normalization.net_duration
 
+
+
+
     # Define circle size
-    total_abstraction_width=1
     def get_circle_size(total_width):
         return (((np.sqrt(total_width) * circle_size_multiplier)*2)+circle_size_offset)
 
+    # # Get the width of all circles
+    # total_abstraction_width=0
+    # for category in range(len(list(plot_object.abstractions.keys()))):
+    #     total_abstraction_width+=plot_object.abstractions[category].width
+    total_abstraction_size=0
     for category, abstraction in plot_object.abstractions.items():
         if category=="non categorized":
             continue
         plot_object.abstractions[category].size=get_circle_size(abstraction.width)
+        total_abstraction_size+=plot_object.abstractions[category].size
 
     # define abstraction x
     number_of_abstractions=len(plot_object.abstractions.values())
     circle_zone_size=1-(abstraction_width_cutoff*2)
-    between_circle_padding=(circle_zone_size-total_abstraction_width)/(number_of_abstractions-2)
+    between_circle_padding=(circle_zone_size-total_abstraction_size)/(number_of_abstractions-2)
 
     last_x=abstraction_width_cutoff-between_circle_padding
 
