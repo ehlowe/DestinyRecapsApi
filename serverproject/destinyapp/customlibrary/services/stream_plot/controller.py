@@ -1,4 +1,4 @@
-from . import data_gen, data_processing, data_plotting, extra_annotations
+from . import data_gen, data_processing, data_plotting, extra_annotations, get_image
 
 from destinyapp.customlibrary import utils
 from destinyapp.models import StreamRecapData
@@ -38,6 +38,16 @@ async def annotate_extra(plot_object):
     plot_object, temp_cost=await extra_annotations.recap_abstractions(plot_object)
     cost+=temp_cost
     return plot_object, cost
+
+async def visit_until_image_saved(video_id):
+    for i in range(3):
+        await get_image.make_plot_save_request(video_id)
+
+        stream_recap_data=await utils.get_recap_data(video_id)
+
+        if len(stream_recap_data.plot_image)>100:
+            break
+
 
 
 # class StreamPlotController:

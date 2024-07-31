@@ -25,6 +25,8 @@ class StreamRecapData(models.Model):
 
     plot_image = models.CharField(max_length=2000000,default="")
 
+    plot_object = models.JSONField(default=dict)
+
     # returns a string representation of the object
     def __str__(self):
         data_str=""
