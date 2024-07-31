@@ -1,4 +1,5 @@
 import os 
+import asyncio
 import tiktoken
 from enum import Enum
 from . import async_openai_client, async_anthropic_client
@@ -56,47 +57,57 @@ async def async_response_handler(
 ) -> tuple[str, float]:
     model_company=model_name_company_mapping.get(model_name,None)
 
-    if model_company==ModelCompanyEnum.openai:
-        if max_tokens:
-            response = await async_openai_client.chat.completions.create(
-                    model=model_name,
-                    messages=prompt,
-                    temperature=temp,
-                    top_p=1,
-                    frequency_penalty=frequency_penalty,
-                    presence_penalty=presence_penalty,
-                )
-        else:
-            response = await async_openai_client.chat.completions.create(
-                    model=model_name,
-                    messages=prompt,
-                    temperature=temp,
-                    top_p=1,
-                    frequency_penalty=frequency_penalty,
-                    presence_penalty=presence_penalty,
-                    max_tokens=max_tokens
-                )
-        
-        cost=prompt_and_response_cost(prompt, response.choices[0].message.content, model_name)
+    max_retries=3
 
-        return response.choices[0].message.content, cost
-    
-    elif model_company==ModelCompanyEnum.anthropic:
-        system_message=prompt[0]["content"]
-        response = await async_anthropic_client.messages.create(
-                model=model_name,
-                max_tokens=4000,
-                temperature=temp,
-                system=system_message,
-                messages=prompt[1:]
-            )
-        
-        cost=prompt_and_response_cost(prompt, response.content[0].text, model_name)
+    for retry in range(max_retries):
+        try:
+            if model_company==ModelCompanyEnum.openai:
+                if max_tokens:
+                    response = await async_openai_client.chat.completions.create(
+                            model=model_name,
+                            messages=prompt,
+                            temperature=temp,
+                            top_p=1,
+                            frequency_penalty=frequency_penalty,
+                            presence_penalty=presence_penalty,
+                        )
+                else:
+                    response = await async_openai_client.chat.completions.create(
+                            model=model_name,
+                            messages=prompt,
+                            temperature=temp,
+                            top_p=1,
+                            frequency_penalty=frequency_penalty,
+                            presence_penalty=presence_penalty,
+                            max_tokens=max_tokens
+                        )
+                
+                cost=prompt_and_response_cost(prompt, response.choices[0].message.content, model_name)
 
-        return response.content[0].text, cost
+                return response.choices[0].message.content, cost
+            
+            elif model_company==ModelCompanyEnum.anthropic:
+                system_message=prompt[0]["content"]
+                response = await async_anthropic_client.messages.create(
+                        model=model_name,
+                        max_tokens=4000,
+                        temperature=temp,
+                        system=system_message,
+                        messages=prompt[1:]
+                    )
+                
+                cost=prompt_and_response_cost(prompt, response.content[0].text, model_name)
+
+                return response.content[0].text, cost
+            
+            break
+        except Exception as e:
+            if (retry+1)>=max_retries:
+                raise Exception(f"Error in async_response_handler after retry {retry}: ", e)
+            else:
+                await asyncio.sleep(10+((retry+1)*3))
     
-    else:
-        raise Exception("Model not recognized")
+    raise Exception("Model not recognized")
     
 # calculate cost
 def calculate_cost(model_name, input="", output=""):

@@ -4,7 +4,10 @@ import sys
 import traceback
 import time
 import asyncio
+import base64
+import io
 import json
+from PIL import Image
 
 # import logging
 # logger = logging.getLogger(__name__)
@@ -288,35 +291,22 @@ async def delete_stream_recap_data(request):
 @csrf_exempt
 @async_to_sync
 async def save_image(request):
-    print("Test")
-
-    # the image data is b64 in the body
-    image_data=request.POST.get("image")
-    image_data=image_data.split("base64,")[1]
-    # import json
+    if request.POST.get("mra")!=os.environ.get("req_pass",""):
+        return JsonResponse({"response":""})
     
-    # image_json=json.loads(image_data)
-
-    # image_data=image_json["pngDataUrl"]
-
-    # print(image_data[0:100])
-
-    # convert the b64 image_data to an image and save to file
-    import base64
-    import io
-    from PIL import Image
-
     try:
-        # convert the b64 image_data to an image
-        image_bytes = base64.b64decode(image_data)
-        image_stream = io.BytesIO(image_bytes)
-        image_rgb = Image.open(image_stream)
-
-        # save the image
-        image_rgb.save("test.png")
+        # Get data from body
+        image_data=request.POST.get("image")
+        video_id=request.POST.get("video_id")
+        image_data=image_data.split("base64,")[1]
+        
+        # load the recap data for video_Id
+        stream_recap_data=await utils.database_operations.get_recap_data(video_id)
+        stream_recap_data.plot_image=image_data
+        await sync_to_async(stream_recap_data.save)()
     except Exception as e:
         traceback.print_exc()
-
+        return JsonResponse({"status":"image not saved"}, safe=False)
 
     return JsonResponse({"status":"image saved"}, safe=False)
 

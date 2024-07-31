@@ -71,7 +71,7 @@ Minor Topics:
 
     print("Cost: ", cost)
 
-    return response_str
+    return response_str, cost
 
 
 def process_topic_annotations_str(topic_annotations_str):
@@ -158,7 +158,7 @@ Make your response using the delmiter 'Segment x: 'about the text segment' ||'re
             print("Fail Retry count: ", fails)
             await asyncio.sleep(10+(fails*2))
 
-    return response_str
+    return response_str, cost
 
 def process_annotation_response(response_str, text_chunk_batch):
     pattern = r"Segment (\d+): (.+) \|\|([^|]+)\|\|"
@@ -209,9 +209,13 @@ async def annotate_all_batches(text_chunk_batches, recap):
     for text_chunk_batch in text_chunk_batches:
         tasks.append(annotate_batch(text_chunk_batch, recap))
     
-    responses=await asyncio.gather(*tasks)
-
-    for i, response in enumerate(responses):
+    responses_and_costs=await asyncio.gather(*tasks)
+    
+    cost=0
+    responses=[]
+    for i, (response, temp_cost) in enumerate(responses_and_costs):
+        cost+=temp_cost
         annotated_results+=process_annotation_response(response, text_chunk_batches[i])
+        responses.append(response)
 
-    return responses, annotated_results
+    return responses, annotated_results, cost

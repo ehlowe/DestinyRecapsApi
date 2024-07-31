@@ -183,7 +183,7 @@ async def process_raw_transcript(input_raw_transcript, video_id):
             prev_word_stop=raw_transcript[i]["words"][j]["end"]
 
         raw_transcript[i]["text"]=utterance_text
-        transcript+=speaker+": "+raw_transcript[i]["text"]
+        transcript+=speaker+": "+utterance_text
         transcript+="\n\n"
 
     # Create Linked Transcript

@@ -1,5 +1,6 @@
 import time
 import os
+from dataclasses import dataclass, asdict, is_dataclass
 from destinyapp.models import StreamRecapData
 import asyncio
 from asgiref.sync import sync_to_async, async_to_sync
@@ -20,8 +21,6 @@ class auto_recap_controller:
         print("Starting Auto Recap Controller")
         video_ids=await self.get_video_ids()
         print(video_ids)
-
-        return 
 
         if video_ids!=[]:
             discord_message_video_ids=await self.generate_all(video_ids)
@@ -92,9 +91,6 @@ class auto_recap_controller:
                     await self.save_data(video_id, full_title, raw_transcript_data, transcript, linked_transcript, text_chunks, segments_and_summaries, finalized_recap)
 
                     try: 
-                        base64_plot_image, clickable_areas, annotated_results = await services.generate_plot(video_id)
-                        await services.save_plot(video_id, base64_plot_image, clickable_areas, annotated_results)
-
                         await StreamPlotController.run(video_id)
                     except Exception as e: 
                         print("Error in auto_recap_controller.generate_all for plot generation: ", e)
@@ -165,9 +161,7 @@ class auto_recap_controller:
 
     # Generate Stream Plot
     async def generate_stream_plot(video_id):
-        stream_recap_data=await utils.get_recap_data(video_id)
-
-        services.generate_strean_plot_data(stream_recap_data)
+        await StreamPlotController.run(video_id)
 
 
 
@@ -184,11 +178,11 @@ class update_controller:
 
         override=str_to_bool(os.environ.get("update_over_bool", "false"))
 
-        # # Update the latest plots
-        # await self.update_latest_plots(stream_recaps_limited, override=override) 
+        # Update the latest plots
+        await self.update_latest_plots(stream_recaps_limited, override=override) 
 
-        # Update the transcript processing
-        await self.update_transcript_processing(stream_recaps_limited)
+        # # Update the transcript processing
+        # await self.update_transcript_processing(stream_recaps_limited)
     
     async def update_latest_plots(stream_recaps_limited, update_range=int(os.environ.get("update_range")), override=False):
         # Get the video ids
@@ -198,18 +192,19 @@ class update_controller:
         print("Video Ids to potentially update: ", video_ids)
 
         for video_id in video_ids[0:update_range]:
+            # Update the raw transcript processing
+            stream_recap_data=await utils.get_recap_data(video_id)
+            transcript, linkted_transcript = await services.process_raw_transcript(stream_recap_data.raw_transcript_data, video_id)
+            stream_recap_data.transcript=transcript
+            stream_recap_data.linked_transcript=linkted_transcript
+            await sync_to_async(stream_recap_data.save)()
+
             # get stream recap data
             stream_recap=await utils.get_recap_data(video_id)
 
             # Generate the stream plot
             if override or len(stream_recap.plot_image)<100:
-                print("Generating Plot for: ", video_id)
-                try:
-                    base64_plot_image, clickable_areas, annotated_results = await services.generate_plot(video_id)
-                    await services.save_plot(video_id, base64_plot_image, clickable_areas, annotated_results)
-                except Exception as e:
-                    print("Error in update_controller.update_process for plot generation: ", e)
-                    traceback.print_exc()
+                await StreamPlotController.run(video_id)
             else:
                 print("Plot already exists for: ", video_id)
 
@@ -250,118 +245,22 @@ class update_controller:
 class StreamPlotController:
     @classmethod
     async def run(self, video_id):
+        cost=0
         stream_recap_data=await utils.get_recap_data(video_id)
 
-        annotated_results, major_topics, minor_topics = await services.stream_plot.generate_data(stream_recap_data)
+        annotated_results, major_topics, minor_topics, temp_cost = await services.stream_plot.generate_data(stream_recap_data)
+        cost+=temp_cost
 
         plot_object, annotated_results, plot_segments, category_locations = await services.stream_plot.process_data(stream_recap_data,  annotated_results, major_topics, minor_topics, video_id)
 
-        plot_object=await services.stream_plot.annotate_extra(plot_object)      
+        plot_object, temp_cost=await services.stream_plot.annotate_extra(video_id, stream_recap_data, plot_object)  
+        cost+=temp_cost
 
-        await services.stream_plot.generate_plot(plot_object)
+        # save plot object to the database
+        stream_recap_data.plot_object=asdict(plot_object)
+        await sync_to_async(stream_recap_data.save)()
 
-    # async def generate_data(stream_recap_data: StreamRecapData):
-    #     text_chunks_no_overlap = await services.stream_plot.data_gen.create_text_chunks(stream_recap_data.transcript, 0)
+        # grab image and save it
+        await services.stream_plot.visit_until_image_saved(video_id)
 
-    #     text_chunk_batches = await services.stream_plot.data_gen.generate_text_chunk_batches(text_chunks_no_overlap)
-
-    #     topic_annotations_str = await services.stream_plot.data_gen.annotate_major_minor_topics(stream_recap_data.recap)
-    #     major_topics, minor_topics = services.stream_plot.data_gen.process_topic_annotations_str(topic_annotations_str)
-
-    #     responses, annotated_results = await services.stream_plot.data_gen.annotate_all_batches(text_chunk_batches, topic_annotations_str)
-
-    #     return annotated_results, major_topics, minor_topics
-    
-    # async def process_data(stream_recap_data: StreamRecapData, annotated_results, major_topics, minor_topics, video_id):
-    #     annotated_segments, category_locations = await services.stream_plot.data_processing.create_segments(stream_recap_data.linked_transcript, annotated_results, major_topics, stream_recap_data.transcript)
-
-    #     plot_segments=await  services.stream_plot.data_processing.annotated_to_plot_segments(annotated_segments)
-
-    #     plot_object=await  services.stream_plot.data_processing.create_plot_object(plot_segments, category_locations, video_id)
-
-    #     return plot_object, annotated_segments, plot_segments, category_locations
-    
-    # async def generate_plot(plot_object):
-    #     return await services.stream_plot.data_plotting.generate_plot(plot_object)
-    
-    # async def run(self, video_id):
-    #     stream_recap_data=await utils.get_recap_data(video_id)
-
-    #     annotated_results, major_topics, minor_topics = await StreamPlotController.generate_data(stream_recap_data)
-
-    #     plot_object, annotated_results, plot_segments, category_locations = await StreamPlotController.process_data(stream_recap_data,  annotated_results, major_topics, minor_topics, video_id)
-
-    #     await StreamPlotController.generate_plot(plot_object)
-
-
-
-
-    # async def run_old():
-    #     video_id_test="Gej2eHRwlM0"
-
-    #     # Ensure that the bot can run
-    #     bot_run_bool=await services.bot_run_check()
-    #     if not bot_run_bool:
-    #         print("Bot cannot run at this time, it has not been long enough since the last run.")
-    #         return
-
-    #     # Get video ids to run on
-    #     video_ids=await services.web_view_recent_stream_ids()
-
-    #     discord_message_video_ids=[]
-
-    #     # Loop through video ids
-    #     for video_id in video_ids:
-
-    #         video_id=video_id_test
-
-    #         # Check run conditions for video_id
-    #         test_stream_recap_data=await utils.get_recap_data(video_id)
-    #         live_bool=await services.get_live_status(video_id)
-
-    #         # Must not have existing data and must not be live
-    #         if (not live_bool) and (test_stream_recap_data==None):
-
-    #             # Download video
-    #             await services.download_video(video_id)
-
-    #             # Generate Assembly Transcript
-    #             raw_transcript = await services.generate_assembly_transcript()
-
-    #             # Process Raw Transcript
-    #             transcript, linked_transcript = await services.process_raw_transcript(raw_transcript, video_id)
-
-    #             # Generate Vector DB and Text Chunks
-    #             vectordb, text_chunks = await services.VectorDbAndTextChunksGenerator.generate_basic_vectordb_and_chunks(video_id, transcript)
-
-    #             # Generate Summarized Segments
-    #             segments_and_summaries = await services.SummarizedSegmentGenerator.generate_summarized_segments(transcript)
-
-    #             # Generate Recap
-    #             recap = await services.RecapGenerator.generate_recap(segments_and_summaries)
-
-    #             # Generate Recap Hook
-    #             recap_hook=await services.RecapGenerator.generate_recap_hook(recap)
-
-    #             # Format and finalize the recap
-    #             finalized_recap=recap_hook+"\n"+recap+"\n\nDISCLAIMER: This is all AI generated and there are frequent errors."
-
-    #             # Get stream title
-    #             full_title=await services.get_video_metadata(video_id)
-
-    #             # Save the data
-    #             stream_recap_data=StreamRecapData(video_id=video_id, video_characteristics={"title":full_title}, raw_transcript_data=raw_transcript, transcript=transcript, linked_transcript=linked_transcript, text_chunks=text_chunks, summarized_chunks=segments_and_summaries, recap=finalized_recap)
-    #             await sync_to_async(stream_recap_data.save)()
-
-    #             # Discord video ids to run
-    #             discord_message_video_ids.append(video_id)
-        
-
-    #     # oldest to newest
-    #     discord_message_video_ids.reverse()
-
-    #     # Compile data for recap messages
-    #     discord_recaps_to_send=await services.DiscordMessageHandler.compile_discord_messages(discord_message_video_ids)
-
-    #     # Send recaps to discord
-    #     await services.DiscordMessageHandler.send_discord_recaps(discord_recaps_to_send)
+        print("Plotting Process Cost: ", cost)

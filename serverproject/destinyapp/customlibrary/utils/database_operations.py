@@ -29,7 +29,7 @@ async def delete_stream_recap_data(video_id):
     await sync_to_async(delete_obj.delete)()
 
 # grab transcript data
-async def get_recap_data(video_id):
+async def get_recap_data(video_id) -> StreamRecapData:
     exists = await sync_to_async(StreamRecapData.objects.filter(video_id=video_id).exists)()
     if exists:
         recap_data = await sync_to_async(StreamRecapData.objects.get)(video_id=video_id)
@@ -123,10 +123,13 @@ async def get_linked_transcript(video_id):
 class SlowRecapDetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model = StreamRecapData
-        fields=["video_id", "video_characteristics", "transcript", "recap", "text_chunks", "chunk_annotations", "plot_clickable_area_data", "plot_image"]
+        fields=["video_id", "video_characteristics", "transcript", "recap", "text_chunks", "chunk_annotations", "plot_clickable_area_data", "plot_image", "plot_object"]
 async def get_slow_recap_details(video_id):
-    recap_data=await sync_to_async(StreamRecapData.objects.only('video_id','video_characteristics', 'transcript', 'recap', "text_chunks", "chunk_annotations", "plot_clickable_area_data", "plot_image").get)(video_id=video_id)
-    serialized_data = await sync_to_async(lambda: SlowRecapDetailsSerializer(recap_data).data)()
+    try:
+        recap_data=await sync_to_async(StreamRecapData.objects.only('video_id','video_characteristics', 'transcript', 'recap', "text_chunks", "chunk_annotations", "plot_clickable_area_data", "plot_image", "plot_object").get)(video_id=video_id)
+        serialized_data = await sync_to_async(lambda: SlowRecapDetailsSerializer(recap_data).data)()
+    except Exception as e:
+        print("Error in get_slow_recap_details: ", e)
 
     return serialized_data
 
