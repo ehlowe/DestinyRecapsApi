@@ -219,6 +219,8 @@ class Segment:
 
     href: str
 
+    recap: str=""
+
 @dataclass
 class Abstraction:
     width: float
@@ -227,6 +229,8 @@ class Abstraction:
     x: float
     y: float
     size: float
+
+    recap: str=""
 
 @dataclass
 class TimeNormalization:
@@ -274,8 +278,10 @@ async def create_plot_object(plot_segments, category_locations, video_id):
     bar_height_setting=0.15
 
     # Abstraction Position
-    upper_y=0.45
-    lower_y=0.3
+    # upper_y=0.45
+    # lower_y=0.3
+    upper_y=.55
+    lower_y=0.70
     circle_size_multiplier=0.1
     circle_size_offset=0.08
     abstraction_width_cutoff=0.05

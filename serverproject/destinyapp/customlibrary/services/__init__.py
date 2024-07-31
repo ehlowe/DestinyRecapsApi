@@ -24,7 +24,8 @@ from .visualization import create_text_chunks, generate_plot, save_plot
 # from .timeline_plot import generate_data
 from . import timeline_plot
 
-# from .stream_plot.controller import StreamPlotController
+from . import stream_plot
+
 # from . import stream_plot_controller
 from . import timeline_plot# import data_gen
 from . import RV

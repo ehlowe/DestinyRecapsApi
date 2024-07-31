@@ -17,7 +17,11 @@ class auto_recap_controller:
 
     @classmethod
     async def run(self):
+        print("Starting Auto Recap Controller")
         video_ids=await self.get_video_ids()
+        print(video_ids)
+
+        return 
 
         if video_ids!=[]:
             discord_message_video_ids=await self.generate_all(video_ids)
@@ -90,6 +94,8 @@ class auto_recap_controller:
                     try: 
                         base64_plot_image, clickable_areas, annotated_results = await services.generate_plot(video_id)
                         await services.save_plot(video_id, base64_plot_image, clickable_areas, annotated_results)
+
+                        await StreamPlotController.run(video_id)
                     except Exception as e: 
                         print("Error in auto_recap_controller.generate_all for plot generation: ", e)
                         traceback.print_exc()
@@ -242,38 +248,50 @@ class update_controller:
 
 
 class StreamPlotController:
-    async def generate_data(stream_recap_data: StreamRecapData):
-        text_chunks_no_overlap = await services.stream_plot.data_gen.create_text_chunks(stream_recap_data.transcript, 0)
-
-        text_chunk_batches = await services.stream_plot.data_gen.generate_text_chunk_batches(text_chunks_no_overlap)
-
-        topic_annotations_str = await services.stream_plot.data_gen.annotate_major_minor_topics(stream_recap_data.recap)
-        major_topics, minor_topics = services.stream_plot.data_gen.process_topic_annotations_str(topic_annotations_str)
-
-        responses, annotated_results = await services.stream_plot.data_gen.annotate_all_batches(text_chunk_batches, topic_annotations_str)
-
-        return annotated_results, major_topics, minor_topics
-    
-    async def process_data(stream_recap_data: StreamRecapData, annotated_results, major_topics, minor_topics, video_id):
-        annotated_segments, category_locations = await services.stream_plot.data_processing.create_segments(stream_recap_data.linked_transcript, annotated_results, major_topics, stream_recap_data.transcript)
-
-        plot_segments=await  services.stream_plot.data_processing.annotated_to_plot_segments(annotated_segments)
-
-        plot_object=await  services.stream_plot.data_processing.create_plot_object(plot_segments, category_locations, video_id)
-
-        return plot_object, annotated_segments, plot_segments, category_locations
-    
-    async def generate_plot(plot_object):
-        return await services.stream_plot.data_plotting.generate_plot(plot_object)
-    
+    @classmethod
     async def run(self, video_id):
         stream_recap_data=await utils.get_recap_data(video_id)
 
-        annotated_results, major_topics, minor_topics = await StreamPlotController.generate_data(stream_recap_data)
+        annotated_results, major_topics, minor_topics = await services.stream_plot.generate_data(stream_recap_data)
 
-        plot_object, annotated_results, plot_segments, category_locations = await StreamPlotController.process_data(stream_recap_data,  annotated_results, major_topics, minor_topics, video_id)
+        plot_object, annotated_results, plot_segments, category_locations = await services.stream_plot.process_data(stream_recap_data,  annotated_results, major_topics, minor_topics, video_id)
 
-        await StreamPlotController.generate_plot(plot_object)
+        plot_object=await services.stream_plot.annotate_extra(plot_object)      
+
+        await services.stream_plot.generate_plot(plot_object)
+
+    # async def generate_data(stream_recap_data: StreamRecapData):
+    #     text_chunks_no_overlap = await services.stream_plot.data_gen.create_text_chunks(stream_recap_data.transcript, 0)
+
+    #     text_chunk_batches = await services.stream_plot.data_gen.generate_text_chunk_batches(text_chunks_no_overlap)
+
+    #     topic_annotations_str = await services.stream_plot.data_gen.annotate_major_minor_topics(stream_recap_data.recap)
+    #     major_topics, minor_topics = services.stream_plot.data_gen.process_topic_annotations_str(topic_annotations_str)
+
+    #     responses, annotated_results = await services.stream_plot.data_gen.annotate_all_batches(text_chunk_batches, topic_annotations_str)
+
+    #     return annotated_results, major_topics, minor_topics
+    
+    # async def process_data(stream_recap_data: StreamRecapData, annotated_results, major_topics, minor_topics, video_id):
+    #     annotated_segments, category_locations = await services.stream_plot.data_processing.create_segments(stream_recap_data.linked_transcript, annotated_results, major_topics, stream_recap_data.transcript)
+
+    #     plot_segments=await  services.stream_plot.data_processing.annotated_to_plot_segments(annotated_segments)
+
+    #     plot_object=await  services.stream_plot.data_processing.create_plot_object(plot_segments, category_locations, video_id)
+
+    #     return plot_object, annotated_segments, plot_segments, category_locations
+    
+    # async def generate_plot(plot_object):
+    #     return await services.stream_plot.data_plotting.generate_plot(plot_object)
+    
+    # async def run(self, video_id):
+    #     stream_recap_data=await utils.get_recap_data(video_id)
+
+    #     annotated_results, major_topics, minor_topics = await StreamPlotController.generate_data(stream_recap_data)
+
+    #     plot_object, annotated_results, plot_segments, category_locations = await StreamPlotController.process_data(stream_recap_data,  annotated_results, major_topics, minor_topics, video_id)
+
+    #     await StreamPlotController.generate_plot(plot_object)
 
 
 
