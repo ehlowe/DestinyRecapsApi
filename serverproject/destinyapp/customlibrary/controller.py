@@ -250,14 +250,18 @@ class update_controller:
 class StreamPlotController:
     @classmethod
     async def run(self, video_id):
+        cost=0
         stream_recap_data=await utils.get_recap_data(video_id)
 
-        annotated_results, major_topics, minor_topics = await services.stream_plot.generate_data(stream_recap_data)
+        annotated_results, major_topics, minor_topics, temp_cost = await services.stream_plot.generate_data(stream_recap_data)
+        cost+=temp_cost
 
         plot_object, annotated_results, plot_segments, category_locations = await services.stream_plot.process_data(stream_recap_data,  annotated_results, major_topics, minor_topics, video_id)
 
-        plot_object=await services.stream_plot.annotate_extra(plot_object)      
+        plot_object, temp_cost=await services.stream_plot.annotate_extra(plot_object)  
+        cost+=temp_cost
 
+        print("Cost: ", cost)
         await services.stream_plot.generate_plot(plot_object)
 
     # async def generate_data(stream_recap_data: StreamRecapData):
