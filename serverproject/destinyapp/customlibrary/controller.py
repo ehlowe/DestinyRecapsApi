@@ -192,6 +192,13 @@ class update_controller:
         print("Video Ids to potentially update: ", video_ids)
 
         for video_id in video_ids[0:update_range]:
+            # Update the raw transcript processing
+            stream_recap_data=await utils.get_recap_data(video_id)
+            transcript, linkted_transcript = await services.process_raw_transcript(stream_recap_data.raw_transcript_data, video_id)
+            stream_recap_data.transcript=transcript
+            stream_recap_data.linked_transcript=linkted_transcript
+            await sync_to_async(stream_recap_data.save)()
+
             # get stream recap data
             stream_recap=await utils.get_recap_data(video_id)
 
@@ -246,7 +253,7 @@ class StreamPlotController:
 
         plot_object, annotated_results, plot_segments, category_locations = await services.stream_plot.process_data(stream_recap_data,  annotated_results, major_topics, minor_topics, video_id)
 
-        plot_object, temp_cost=await services.stream_plot.annotate_extra(plot_object)  
+        plot_object, temp_cost=await services.stream_plot.annotate_extra(video_id, stream_recap_data, plot_object)  
         cost+=temp_cost
 
         # save plot object to the database

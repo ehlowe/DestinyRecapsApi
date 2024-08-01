@@ -31,11 +31,13 @@ async def process_data(stream_recap_data: StreamRecapData, annotated_results, ma
 async def generate_plot(plot_object):
     return await data_plotting.generate_plot(plot_object)
 
-async def annotate_extra(plot_object):
+async def annotate_extra(video_id, stream_recap_data, plot_object):
     cost=0
     plot_object, temp_cost=await extra_annotations.recap_segments(plot_object)
     cost+=temp_cost
     plot_object, temp_cost=await extra_annotations.recap_abstractions(plot_object)
+    cost+=temp_cost
+    plot_object, temp_cost=await extra_annotations.exact_start_annotations(video_id, stream_recap_data, plot_object)  
     cost+=temp_cost
     return plot_object, cost
 
