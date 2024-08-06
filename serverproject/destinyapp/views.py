@@ -35,9 +35,9 @@ delete_enabled=str_to_bool(os.environ.get("delete_enabled",""))
 
 
 # Custom Imports
-from destinyapp.customlibrary import utils
-from destinyapp.customlibrary import controller
-from destinyapp.customlibrary import services
+from core import utils
+from core import controller
+from core import services
 from destinyapp.models import StreamRecapData
 from destinyapp.middleware import password_checker
 
