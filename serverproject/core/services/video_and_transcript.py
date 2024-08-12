@@ -1,4 +1,5 @@
 import os
+import subprocess
 import asyncio
 
 import yt_dlp
@@ -23,6 +24,7 @@ async def download_video(video_id):#, output_folder, output_name):
             'format': 'bestaudio/best',
             'outtmpl': folder_path+'raw'+'.%(ext)s',#os.path.join(output_folder,output_name)+'.%(ext)s',
             'age_limit': 21, 
+            'cookiesfrombrowser': ('firefox',),
         }
 
         # delete previous audio file with 'raw' in the name
@@ -52,8 +54,43 @@ async def download_video(video_id):#, output_folder, output_name):
         merged_audio.write_audiofile(folder_path+"merged_audio.mp3")
         print("download thread finished")
         return
+    # Download video
+    def cmd_download_video_thread(video_id):
+        folder_path="destinyapp/working_folder/working_audio/"
 
-    await asyncio.to_thread(download_video_thread, video_id)
+        # delete previous audio file with 'raw' in the name
+        audio_dir_files=os.listdir(folder_path)
+        for file_name in audio_dir_files:
+            if 'raw' in file_name:
+                os.remove(folder_path+file_name)
+                break
+
+        output_path=folder_path + 'raw.%(ext)s'
+        command=['yt-dlp', '--format', 'bestaudio/best', '-o', output_path, '--verbose', '--username', 'oauth2', '--password', '""', '-x', '--', 'https://www.youtube.com/watch?v='+video_id]
+        try: 
+            result = subprocess.run(command, check=True, capture_output=True, text=True)
+        except Exception as e:
+            pass
+
+        # open destinyspeaking.mp3
+        destiny_speech_path=folder_path+"destinyspeaking.mp3"
+        destiny_speech = AudioFileClip(destiny_speech_path)
+        audio_dir_files=os.listdir(folder_path)
+
+        # find the audio file with 'raw' in the name
+        for file_name in audio_dir_files:
+            if 'raw' in file_name:
+                youtube_audio_path=folder_path+file_name
+                break
+
+        # Concatentate the two audio files
+        youtube_video = AudioFileClip(youtube_audio_path)
+        merged_audio = concatenate_audioclips([destiny_speech, youtube_video])
+        merged_audio.write_audiofile(folder_path+"merged_audio.mp3")
+        print("download thread finished")
+        return
+
+    await asyncio.to_thread(cmd_download_video_thread, video_id)
     print("download thread closed")
 
 # Raw Transcript Generation

@@ -63,6 +63,7 @@ class auto_recap_controller:
         # video_id_test="Krhk1FmL7b0"
         # video_id_test="-JNo1S9EDXI"
         video_id_test="nDINo-QO88Y"
+        video_id_test="QCIXqc8J4ck"
 
         if os.environ.get("discord_channel")=="recaps":
             video_id_test=None
