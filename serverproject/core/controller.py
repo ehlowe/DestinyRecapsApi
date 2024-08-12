@@ -63,7 +63,7 @@ class auto_recap_controller:
         # video_id_test="Krhk1FmL7b0"
         # video_id_test="-JNo1S9EDXI"
         video_id_test="nDINo-QO88Y"
-        video_id_test="QCIXqc8J4ck"
+        video_id_test="-EUyVSZEuIc"
 
         if os.environ.get("discord_channel")=="recaps":
             video_id_test=None
@@ -94,6 +94,7 @@ class auto_recap_controller:
 
                     # Save the data
                     await self.save_data(video_id, full_title, raw_transcript_data, transcript, linked_transcript, text_chunks, segments_and_summaries, finalized_recap)
+                    print("Saved Recap Data prior to plot generation")
 
                     try: 
                         await StreamPlotController.run(video_id)

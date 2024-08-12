@@ -6,6 +6,7 @@ import yt_dlp
 from moviepy.editor import AudioFileClip, concatenate_audioclips
 
 import assemblyai as aai
+import time
 
 
 
@@ -71,6 +72,9 @@ async def download_video(video_id):#, output_folder, output_name):
             result = subprocess.run(command, check=True, capture_output=True, text=True)
         except Exception as e:
             pass
+        time.sleep(2)
+        print("Finished Downloading Video")
+    
 
         # open destinyspeaking.mp3
         destiny_speech_path=folder_path+"destinyspeaking.mp3"
