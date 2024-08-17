@@ -35,6 +35,17 @@ class auto_recap_controller:
         print("Writing to master vectordb")
         await services.vector_db_and_text_chunks.AllRecapsVectorDB.write_master_all()
 
+    @classmethod
+    async def manual_run(self, video_ids):
+        print("Starting Manual Auto Recap Controller for video ids: ", video_ids)
+
+        if video_ids!=[]:
+            discord_message_video_ids=await self.generate_all(video_ids)
+
+            if discord_message_video_ids!=[]:
+                await self.send_discord_messages(discord_message_video_ids)
+        await services.vector_db_and_text_chunks.AllRecapsVectorDB.write_master_all()
+
 
 
 
@@ -91,29 +102,9 @@ class auto_recap_controller:
 
             # Must not have existing data and must not be live
             if (not live_bool) and (test_stream_recap_data==None):
-                try:
-                    print("STARTING RECAP GENERATION FOR: ", video_id)
-                    # Get all transcript data
-                    transcript, linked_transcript, raw_transcript_data=await self.produce_transcript_data(video_id)
-
-                    # Get all recap data
-                    vectordb, text_chunks, segments_and_summaries, finalized_recap, full_title=await self.produce_recap_data(video_id, transcript)
-
-                    # Save the data
-                    await self.save_data(video_id, full_title, raw_transcript_data, transcript, linked_transcript, text_chunks, segments_and_summaries, finalized_recap)
-                    print("Saved Recap Data prior to plot generation")
-
-                    try: 
-                        await StreamPlotController.run(video_id)
-                    except Exception as e: 
-                        print("Error in auto_recap_controller.generate_all for plot generation: ", e)
-                        traceback.print_exc()
-
-                    # add the video id to the list of video ids to send discord messages for
-                    discord_message_video_ids.append(video_id)
-                except Exception as e:
-                    print("Error in auto_recap_controller.generate_all: ", e)
-                    traceback.print_exc()
+                generated_video_id=await self.generate(video_id)
+                if generated_video_id!=None:
+                    discord_message_video_ids.append(generated_video_id)
             else:
                 if test_stream_recap_data!=None:
                     print("Stream Recap Data already exists for: ", video_id)
@@ -121,6 +112,34 @@ class auto_recap_controller:
                     print("Stream is live for: ", video_id)
 
         return discord_message_video_ids
+    
+    @classmethod
+    async def generate(self, video_id):
+        try:
+            print("STARTING RECAP GENERATION FOR: ", video_id)
+            # Get all transcript data
+            transcript, linked_transcript, raw_transcript_data=await self.produce_transcript_data(video_id)
+
+            # Get all recap data
+            vectordb, text_chunks, segments_and_summaries, finalized_recap, full_title=await self.produce_recap_data(video_id, transcript)
+
+            # Save the data
+            await self.save_data(video_id, full_title, raw_transcript_data, transcript, linked_transcript, text_chunks, segments_and_summaries, finalized_recap)
+            print("Saved Recap Data prior to plot generation")
+
+            try: 
+                await StreamPlotController.run(video_id)
+            except Exception as e: 
+                print("Error in auto_recap_controller.generate_all for plot generation: ", e)
+                traceback.print_exc()
+
+            # add the video id to the list of video ids to send discord messages for
+            return video_id
+        except Exception as e:
+            print("Error in auto_recap_controller.generate: ", e)
+            traceback.print_exc()
+            return None
+
 
     # Produce Transcript Data
     async def produce_transcript_data(video_id):

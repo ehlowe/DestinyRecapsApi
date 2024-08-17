@@ -180,11 +180,52 @@ async def cache_locked_recap_generate():
     print("DELETED CACHE LOCK,  AUTO RECAPS FINISHED")
 
 
+# MANUAL RECAPS VIEW
+@password_checker
+async def manual_recaps_request(request):    
+    # make thread for auto_recaps_generator
+    video_id=request.GET.get("video_id")
+    recap_generation_started=enqueue_manual_recaps_generation(video_id)
+
+    if recap_generation_started:
+        return JsonResponse({"response":"Recaps Generation Started"})
+    else:
+        return JsonResponse({"response":"Recaps Generation Already Running"})
+def enqueue_manual_recaps_generation(video_id):
+    if not cache.get(recap_generate_cache_lock_id):
+        cache.set(recap_generate_cache_lock_id, True, timeout=7200)
+        asyncio.create_task(cache_locked_manual_recap_generate(video_id))
+        return True
+    else:
+        return False
+async def cache_locked_manual_recap_generate(video_id):
+    try:
+        # Generate Data
+        discord_message_video_ids=[]
+        generated_video_id = await controller.auto_recap_controller.generate(video_id)
+
+        # Send Discord Messages
+        if generated_video_id!=None:
+            discord_message_video_ids.append(generated_video_id)
+        if discord_message_video_ids!=[]:
+            await controller.auto_recap_controller.send_discord_messages(discord_message_video_ids)
+
+    # print the error if any with as much information as possible
+    except Exception as e:
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        print("Manual Controller error")
+        print(repr(traceback.format_exception(exc_type, exc_value, exc_traceback)))
+        print(e)
+        print("End of Manual Controller error")
+
+    cache.delete('auto_recaps_generator_lock')
+    print("DELETED CACHE LOCK,  MANUAL RECAPS FINISHED")
 
 
 
 
-# AUTO RECAPS VIEW
+
+# UPDATE VIEW
 @password_checker
 async def recap_update_request(request):    
     # make thread for auto_recaps_generator
