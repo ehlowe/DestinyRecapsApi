@@ -287,10 +287,15 @@ async def delete_stream_recap_data(request):
 
 
 # make a view to accept image data and then save the image
-@sync_to_async
-@csrf_exempt
-@async_to_sync
-async def save_image(request):
+# @sync_to_async
+# @csrf_exempt
+# @async_to_sync
+
+from django.utils.decorators import method_decorator
+@method_decorator(csrf_exempt, name='dispatch')
+async def a_save_image(request):
+    print("GOT SAVE IMAGE REQUEST")
+
     if request.POST.get("mra")!=os.environ.get("req_pass",""):
         return JsonResponse({"response":""})
     
@@ -309,5 +314,36 @@ async def save_image(request):
         return JsonResponse({"status":"image not saved"}, safe=False)
 
     return JsonResponse({"status":"image saved"}, safe=False)
+
+
+from threading import Thread
+@csrf_exempt
+def save_image(request):
+    if request.POST.get("mra")!=os.environ.get("req_pass",""):
+        return JsonResponse({"response":""})
+    try:
+        # Get data from body
+        image_data=request.POST.get("image")
+        video_id=request.POST.get("video_id")
+        image_data=image_data.split("base64,")[1]
+        
+        # start a background thread to save the image
+        Thread(target=run_async_save_image, args=(video_id, image_data)).start()
+
+        return JsonResponse({"status":"image saved"}, safe=False)
+    except Exception as e:
+        traceback.print_exc()
+        return JsonResponse({"status":"image not saved"}, safe=False)
+    
+def run_async_save_image(video_id, image_data):
+    asyncio.run(async_save_image_thread(video_id, image_data))
+
+async def async_save_image_thread(video_id, image_data):
+    stream_recap_data=await utils.database_operations.get_recap_data(video_id)
+    stream_recap_data.plot_image=image_data
+    await sync_to_async(stream_recap_data.save)()
+    print("Save Image Thread Finished")
+
+    return 
 
 
