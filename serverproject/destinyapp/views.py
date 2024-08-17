@@ -317,8 +317,9 @@ async def a_save_image(request):
 
 
 from threading import Thread
-@csrf_exempt
+# @csrf_exempt
 def save_image(request):
+    print("SAVING IMAGE")
     if request.POST.get("mra")!=os.environ.get("req_pass",""):
         return JsonResponse({"response":""})
     try:
@@ -347,3 +348,16 @@ async def async_save_image_thread(video_id, image_data):
     return 
 
 
+
+
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import generics, status
+
+class CreateRoomVIew(APIView):
+    def post(self, request, format=None):
+        print("CREATE ROOM VIEW")
+        data = request.data
+        print(data)
+        return Response({"response":"ok"}, status=status.HTTP_200_OK)

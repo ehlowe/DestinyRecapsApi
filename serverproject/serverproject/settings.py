@@ -48,6 +48,13 @@ SECRET_KEY = os.environ.get("django_secret_key")
 
 
 
+
+# Override CSRF token generation
+def constant_csrf_token(*args, **kwargs):
+    return '123'  # Your chosen constant token
+
+
+
 ALLOWED_HOSTS = ["destinyrecaps.com","localhost","127.0.0.1","3.135.118.64"]
 
 
@@ -104,10 +111,12 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     # 'destinyapp.middleware.AsyncErrorHandlingMiddleware',
 ]
-CORS_ORIGIN_WHITE_LIST=[
-    "http://localhost:5173/",
-]
-CORS_ALLOW_ALL_ORIGINS = True
+# CORS_ORIGIN_WHITE_LIST=[
+#     "http://localhost:5173/",
+# ]
+
+
+
 
 ROOT_URLCONF = "serverproject.urls"
 
@@ -170,3 +179,58 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+CORS_ALLOW_ALL_ORIGINS = True
+
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:5173",
+# ]
+
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+]
+
+# Use the constant token for CSRF
+CSRF_USE_SESSIONS = False
+CSRF_COOKIE_HTTPONLY = False
+CSRF_HEADER_NAME = 'HTTP_X_CSRFTOKEN'
+CSRF_COOKIE_NAME = 'csrftoken'
+CSRF_GET_TOKEN = '123'
+CSRF_POST_TOKEN = '123'
+
+# CSRF settings
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_TRUSTED_ORIGINS = ['http://localhost:5173']
+CSRF_USE_SESSIONS = False
+CSRF_COOKIE_NAME = 'csrftoken'
+CSRF_COOKIE_SECURE = False

@@ -27,4 +27,6 @@ urlpatterns = [
 
     # save png
     path('save_png', views.save_image, name='save_png'),
+
+    path('save_test', views.CreateRoomVIew.as_view(), name='save_test'),
 ]
