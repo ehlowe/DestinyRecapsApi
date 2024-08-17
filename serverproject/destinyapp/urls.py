@@ -26,7 +26,6 @@ urlpatterns = [
     path('delete_stream_recap_data', views.delete_stream_recap_data, name='delete_stream_recap_data'),
 
     # save png
-    path('save_png', views.save_image, name='save_png'),
-
-    path('save_test', views.CreateRoomVIew.as_view(), name='save_test'),
+    path('save_png', views.SaveImageView.as_view(), name='save_png'),
+    
 ]

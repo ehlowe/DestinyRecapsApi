@@ -318,23 +318,30 @@ async def a_save_image(request):
 
 from threading import Thread
 # @csrf_exempt
-def save_image(request):
-    print("SAVING IMAGE")
-    if request.POST.get("mra")!=os.environ.get("req_pass",""):
-        return JsonResponse({"response":""})
-    try:
-        # Get data from body
-        image_data=request.POST.get("image")
-        video_id=request.POST.get("video_id")
-        image_data=image_data.split("base64,")[1]
-        
-        # start a background thread to save the image
-        Thread(target=run_async_save_image, args=(video_id, image_data)).start()
 
-        return JsonResponse({"status":"image saved"}, safe=False)
-    except Exception as e:
-        traceback.print_exc()
-        return JsonResponse({"status":"image not saved"}, safe=False)
+from threading import Thread
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import generics, status
+
+class SaveImageView(APIView):
+    def post(self, request, format=None):
+        print("SAVING IMAGE")
+        if request.POST.get("mra")!=os.environ.get("req_pass",""):
+            return JsonResponse({"response":""})
+        try:
+            # Get data from body
+            image_data=request.POST.get("image")
+            video_id=request.POST.get("video_id")
+            image_data=image_data.split("base64,")[1]
+            
+            # start a background thread to save the image
+            Thread(target=run_async_save_image, args=(video_id, image_data)).start()
+
+            return JsonResponse({"status":"image saved"}, safe=False)
+        except Exception as e:
+            traceback.print_exc()
+            return JsonResponse({"status":"image not saved"}, safe=False)
     
 def run_async_save_image(video_id, image_data):
     asyncio.run(async_save_image_thread(video_id, image_data))
@@ -351,13 +358,13 @@ async def async_save_image_thread(video_id, image_data):
 
 
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import generics, status
+# from rest_framework.views import APIView
+# from rest_framework.response import Response
+# from rest_framework import generics, status
 
-class CreateRoomVIew(APIView):
-    def post(self, request, format=None):
-        print("CREATE ROOM VIEW")
-        data = request.data
-        print(data)
-        return Response({"response":"ok"}, status=status.HTTP_200_OK)
+# class CreateRoomVIew(APIView):
+#     def post(self, request, format=None):
+#         print("CREATE ROOM VIEW")
+#         data = request.data
+#         print(data)
+#         return Response({"response":"ok"}, status=status.HTTP_200_OK)
