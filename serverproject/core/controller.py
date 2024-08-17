@@ -32,6 +32,7 @@ class auto_recap_controller:
             if discord_message_video_ids!=[]:
                 await self.send_discord_messages(discord_message_video_ids)
 
+        print("Writing to master vectordb")
         await services.vector_db_and_text_chunks.AllRecapsVectorDB.write_master_all()
 
 
@@ -76,6 +77,7 @@ class auto_recap_controller:
         # Loop through video ids
         for video_id in video_ids:
 
+            # override with video_id_test
             if video_id_test!=None:
                 video_id=video_id_test
 
@@ -83,9 +85,14 @@ class auto_recap_controller:
             test_stream_recap_data=await utils.get_recap_data(video_id)
             live_bool=await services.get_live_status(video_id)
 
+            # override live_bool to test
+            if video_id_test!=None:
+                live_bool=False
+
             # Must not have existing data and must not be live
             if (not live_bool) and (test_stream_recap_data==None):
                 try:
+                    print("STARTING RECAP GENERATION FOR: ", video_id)
                     # Get all transcript data
                     transcript, linked_transcript, raw_transcript_data=await self.produce_transcript_data(video_id)
 
@@ -107,6 +114,11 @@ class auto_recap_controller:
                 except Exception as e:
                     print("Error in auto_recap_controller.generate_all: ", e)
                     traceback.print_exc()
+            else:
+                if test_stream_recap_data!=None:
+                    print("Stream Recap Data already exists for: ", video_id)
+                if live_bool:
+                    print("Stream is live for: ", video_id)
 
         return discord_message_video_ids
 
@@ -143,7 +155,8 @@ class auto_recap_controller:
         finalized_recap=recap_hook+"\n"+recap+"\n\nDISCLAIMER: This is all AI generated and there are frequent errors."
 
         # Get stream title
-        full_title=await services.get_video_metadata(video_id)
+        # full_title=await services.get_video_metadata(video_id)
+        full_title="  .  "
 
         return vectordb, text_chunks, segments_and_summaries, finalized_recap, full_title
     

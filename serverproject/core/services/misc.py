@@ -20,7 +20,7 @@ async def get_video_metadata(video_id):
         pass
     return full_title
 
-async def get_live_status(video_id):
+async def get_live_status_youtube(video_id):
     # Get video
     url = 'https://www.youtube.com/watch?v='+video_id
     yt = YouTube(url)
@@ -39,3 +39,54 @@ async def get_live_status(video_id):
     except Exception as e:
         live_bool=False
     return live_bool
+
+
+
+import asyncio
+
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+
+async def get_live_status(video_id):
+    live_status=False
+
+    try:
+        options = Options()
+        options.add_argument('--headless')
+        options.add_argument('--disable-gpu')
+        options.add_argument('--no-sandbox')
+
+        # Create a Service instance with ChromeDriverManager
+        service = Service(ChromeDriverManager().install())
+        if "THIRD_PARTY_NOTICES" in service.path:
+            service = Service(service.path.replace("THIRD_PARTY_NOTICES.chromedriver", "chromedriver.exe"))
+
+        # Initialize the Chrome WebDriver with the specified service and options
+        driver = webdriver.Chrome(service=service, options=options)
+        driver.implicitly_wait(10)
+
+        # Go to the page
+        driver.get("https://www.destiny.gg/bigscreen")
+        await asyncio.sleep(5)
+
+        # Now the page is fully loaded, including content loaded via JavaScript 
+        html_content = driver.page_source
+        
+        # Check if stuff is live at all
+        element = driver.find_element(By.CSS_SELECTOR, "#offline-text")
+
+        offline_text_display_mode=element.value_of_css_property("display")
+        if offline_text_display_mode=="none":
+            live_status=True
+
+        #html_content.split("https://www.youtube.com/embed/")[-1].split("?autoplay=")[0]
+
+        driver.quit()
+    except Exception as e:
+        driver.quit()
+        pass
+
+    return live_status
