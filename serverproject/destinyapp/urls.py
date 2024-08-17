@@ -17,6 +17,7 @@ urlpatterns = [
 
     # Recap Generation Views
     path('generate_recap', views.auto_recaps_request, name='generate_recap'),
+    path('manual_generate_recap', views.manual_recaps_request, name='manual_generate_recap'),
     path('update', views.recap_update_request, name='recap_update_request'),
 
     # download stream data
@@ -26,5 +27,6 @@ urlpatterns = [
     path('delete_stream_recap_data', views.delete_stream_recap_data, name='delete_stream_recap_data'),
 
     # save png
-    path('save_png', views.save_image, name='save_png'),
+    path('save_png', views.SaveImageView.as_view(), name='save_png'),
+
 ]

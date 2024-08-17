@@ -21,7 +21,12 @@ from django.views.generic import TemplateView
 
 print("include: ",include("destinyapp.urls"))
 
+from django.http import HttpResponse
+def home():
+    return HttpResponse("Hello, Django!")
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/", include("destinyapp.urls")),
+    path("/", home),
 ]

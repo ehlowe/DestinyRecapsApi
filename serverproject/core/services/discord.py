@@ -64,11 +64,12 @@ class DiscordMessageHandler:
                 recap_chunks["segments"]=[]
                 increment_size=1500
 
-                if len(recap.plot_image)>100:
-                    hook=message_str[0:500].split("\n")[0]
-                    await channel.send(hook)
+                # if len(recap.plot_image)>100:
+                #     hook=message_str[0:500].split("\n")[0]
+                #     await channel.send(hook)
 
-                else:
+                # else:
+                if True:
                     # increment for the number of segments needed
                     for i in range((len(message_str)//increment_size)+1):
                         

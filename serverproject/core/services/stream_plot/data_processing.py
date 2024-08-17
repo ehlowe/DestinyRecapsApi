@@ -320,8 +320,13 @@ async def create_plot_object(plot_segments, category_locations, video_id):
         if segment["category"]!="non categorized":
             total_abstraction_width+=segment["width"]
 
+    # Latest time
+    all_end_times=max([segment.end_time for segment in plot_object.segments])
+    earliest_time=min([segment.start_time for segment in plot_object.segments])
+    
+
     # Define time_normalization
-    plot_object.time_normalization=TimeNormalization(net_duration=plot_object.segments[-1].end_time-plot_object.segments[0].start_time, start_offset=plot_object.segments[0].start_time)
+    plot_object.time_normalization=TimeNormalization(net_duration=all_end_times-earliest_time, start_offset=earliest_time)
 
     # Define Abstractions
     for i in range(len(plot_object.segments)):
