@@ -29,12 +29,25 @@ async def get_video_characteristics(video_id):
     upload_date=""
 
     try:
-        cmd=f'yt-dlp --skip-download --print "%(upload_date)s | %(channel)s | %(title)s" "https://www.youtube.com/watch?v={video_id}"'
+        cmd=f'yt-dlp --skip-download --print "%(upload_date)s |]| %(channel)s |]| %(title)s" "https://www.youtube.com/watch?v={video_id}"'
         result = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        data=result.stdout.decode("utf-8")
-        upload_date, channel, title=data.split("|")
     except Exception as e:
-        print("Error in get_video_metadata_cmd")
+        print("Error in get_video_metadata_cmd", e)
+        try:
+            print("CMD RESULT:", result)
+        except:
+            pass
+        return {"title": title, "channel": channel, "date": upload_date}
+    
+    try:
+        data=result.stdout.decode("utf-8")
+        upload_date, channel, title=data.split("|]|")
+    except Exception as e:
+        print("Error in parsing video_characteristics", e)
+        try:
+            print("DATA:", data)
+        except:
+            pass
         return {"title": title, "channel": channel, "date": upload_date}
     
     try:
