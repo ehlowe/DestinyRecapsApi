@@ -56,6 +56,21 @@ class StreamRecapData(models.Model):
         
 
         
+class WeeklyRecapData(models.Model):
+    date_generated = models.DateTimeField(auto_now_add=True)
+    video_ids=models.JSONField(default=list)
+
+    recap_hook = models.CharField(max_length=1000000,default="")
+    recap = models.CharField(max_length=1000000,default="")
+
+    plot_image = models.CharField(max_length=2000000,default="")
+    plot_object = models.JSONField(default=dict)
+
+
+
+
+
+
 
 
 

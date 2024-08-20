@@ -132,3 +132,28 @@ def prompt_and_response_cost(prompt, response, model_name):
             input_str+=message["content"]
     output_str=response
     return calculate_cost(model_name, input_str, output_str)
+
+
+
+
+
+
+
+
+
+
+
+
+import replicate
+
+async def generate_image(prompt):
+
+    input = {
+        "prompt": prompt
+    }
+
+    output = replicate.run(
+        "black-forest-labs/flux-dev",
+        input=input,
+    )
+    return output

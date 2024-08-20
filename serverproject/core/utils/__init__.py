@@ -9,12 +9,13 @@ openai_client=openai.OpenAI(api_key=os.environ.get("openai",""))
 async_openai_client=AsyncOpenAI(api_key=os.environ.get("openai",""))
 anthropic_client=anthropic.Anthropic(api_key=os.environ.get("anthropic",""))
 async_anthropic_client=AsyncAnthropic(api_key=os.environ.get("anthropic",""))
+os.environ["REPLICATE_API_TOKEN"]=os.environ.get("replicate","")
 aai.settings.api_key=os.environ.get("assemblyai","")
 
 
 # Api related utils
 from . import api_requests
-from .api_requests import ModelNameEnum, async_response_handler
+from .api_requests import ModelNameEnum, async_response_handler, generate_image
 
 
 # Database related utils
