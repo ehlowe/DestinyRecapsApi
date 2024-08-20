@@ -219,12 +219,13 @@ class update_controller:
         override=str_to_bool(os.environ.get("update_over_bool", "false"))
 
         # Update the latest plots
-        await self.update_latest_plots(stream_recaps_limited, override=override) 
+        #await self.update_latest_plots(stream_recaps_limited, override=override) 
 
         # # Update the transcript processing
         # await self.update_transcript_processing(stream_recaps_limited)
 
         # update the video_characteristics
+        await self.update_video_characteristics(stream_recaps_limited)
     
     async def update_latest_plots(stream_recaps_limited, update_range=int(os.environ.get("update_range")), override=False):
         # Get the video ids
