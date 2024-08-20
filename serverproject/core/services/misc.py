@@ -3,22 +3,71 @@ import datetime
 import yt_dlp as youtube_dl
 from pytube import YouTube
 
-async def get_video_metadata(video_id):
-    ydl_opts = {}
-    full_title=""
+# async def get_video_metadata(video_id):
+#     ydl_opts = {}
+#     full_title=""
+#     try:
+#         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+#             info_dict = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
+#             info_dict_g=info_dict
+#             upload_date = info_dict['upload_date']
+#             upload_date
+#             date_obj=datetime.datetime.strptime(upload_date, "%Y%m%d")
+#             date_str=date_obj.strftime("%m/%d/%Y")
+#             title=info_dict["title"]
+#             full_title=title+"\nStream Date~ "+date_str
+#     except Exception as e:
+#         pass
+#     return full_title
+
+
+import subprocess
+async def get_video_characteristics(video_id):
+    #yt-dlp --skip-download --print "%(upload_date)s | %(channel)s | %(title)s" "VIDEO_URL"
+    title=""
+    channel=""
+    upload_date=""
+
     try:
-        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-            info_dict = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
-            info_dict_g=info_dict
-            upload_date = info_dict['upload_date']
-            upload_date
-            date_obj=datetime.datetime.strptime(upload_date, "%Y%m%d")
-            date_str=date_obj.strftime("%m/%d/%Y")
-            title=info_dict["title"]
-            full_title=title+"\nStream Date~ "+date_str
+        #'--username', 'oauth2', '--password', '""',
+        cmd=f'yt-dlp --username oauth2 --password "" --skip-download --print "%(upload_date)s |]| %(channel)s |]| %(title)s" "https://www.youtube.com/watch?v={video_id}"'
+        result = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except Exception as e:
+        print("Error in get_video_metadata_cmd", e)
+        try:
+            print("CMD RESULT:", result)
+        except:
+            pass
+        return {"title": title, "channel": channel, "date": upload_date}
+    
+    try:
+        data=result.stdout.decode("utf-8")
+        upload_date, channel, title=data.split("|]|")
+    except Exception as e:
+        print("Error in parsing video_characteristics", e)
+        try:
+            print("DATA:", data)
+            print("RESULT:", result)
+        except:
+            pass
+        return {"title": title, "channel": channel, "date": upload_date}
+    
+    try:
+        date_obj=datetime.datetime.strptime(upload_date.strip(), "%Y%m%d")
+        upload_date=date_obj.strftime("%m/%d/%Y")
+    except:
         pass
-    return full_title
+
+
+    title=title.strip()
+    if upload_date!="":
+        title+="\nStream Date~ "+upload_date
+
+    channel=channel.strip()
+
+    return {"title": title, "channel": channel, "date": upload_date}
+
+
 
 async def get_live_status_youtube(video_id):
     # Get video

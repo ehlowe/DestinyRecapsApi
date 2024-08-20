@@ -96,6 +96,9 @@ class auto_recap_controller:
             test_stream_recap_data=await utils.get_recap_data(video_id)
             live_bool=await services.get_live_status(video_id)
 
+            # wait a few seconds 
+            asyncio.sleep(5)
+
             # override live_bool to test
             if video_id_test!=None:
                 live_bool=False
@@ -121,10 +124,10 @@ class auto_recap_controller:
             transcript, linked_transcript, raw_transcript_data=await self.produce_transcript_data(video_id)
 
             # Get all recap data
-            vectordb, text_chunks, segments_and_summaries, finalized_recap, full_title=await self.produce_recap_data(video_id, transcript)
+            vectordb, text_chunks, segments_and_summaries, finalized_recap, video_characteristics=await self.produce_recap_data(video_id, transcript)
 
             # Save the data
-            await self.save_data(video_id, full_title, raw_transcript_data, transcript, linked_transcript, text_chunks, segments_and_summaries, finalized_recap)
+            await self.save_data(video_id, video_characteristics, raw_transcript_data, transcript, linked_transcript, text_chunks, segments_and_summaries, finalized_recap)
             print("Saved Recap Data prior to plot generation")
 
             try: 
@@ -174,14 +177,13 @@ class auto_recap_controller:
         finalized_recap=recap_hook+"\n"+recap+"\n\nDISCLAIMER: This is all AI generated and there are frequent errors."
 
         # Get stream title
-        # full_title=await services.get_video_metadata(video_id)
-        full_title="  .  "
+        video_characteristics=await services.get_video_characteristics(video_id)
 
-        return vectordb, text_chunks, segments_and_summaries, finalized_recap, full_title
+        return vectordb, text_chunks, segments_and_summaries, finalized_recap, video_characteristics
     
     # Save the data
-    async def save_data(video_id, full_title, raw_transcript_data, transcript, linked_transcript, text_chunks, segments_and_summaries, finalized_recap):
-        stream_recap_data=StreamRecapData(video_id=video_id, video_characteristics={"title":full_title}, raw_transcript_data=raw_transcript_data, transcript=transcript, linked_transcript=linked_transcript, text_chunks=text_chunks, summarized_chunks=segments_and_summaries, recap=finalized_recap)
+    async def save_data(video_id, video_characteristics, raw_transcript_data, transcript, linked_transcript, text_chunks, segments_and_summaries, finalized_recap):
+        stream_recap_data=StreamRecapData(video_id=video_id, video_characteristics=video_characteristics, raw_transcript_data=raw_transcript_data, transcript=transcript, linked_transcript=linked_transcript, text_chunks=text_chunks, summarized_chunks=segments_and_summaries, recap=finalized_recap)
 
         await sync_to_async(stream_recap_data.save)()
 
@@ -217,10 +219,13 @@ class update_controller:
         override=str_to_bool(os.environ.get("update_over_bool", "false"))
 
         # Update the latest plots
-        await self.update_latest_plots(stream_recaps_limited, override=override) 
+        #await self.update_latest_plots(stream_recaps_limited, override=override) 
 
         # # Update the transcript processing
         # await self.update_transcript_processing(stream_recaps_limited)
+
+        # update the video_characteristics
+        await self.update_video_characteristics(stream_recaps_limited)
     
     async def update_latest_plots(stream_recaps_limited, update_range=int(os.environ.get("update_range")), override=False):
         # Get the video ids
@@ -264,6 +269,29 @@ class update_controller:
                 print("Error in update_controller.update_process for transcript processing: ", e)
                 traceback.print_exc()
 
+    async def update_video_characteristics(stream_recaps_limited, update_range=int(os.environ.get("update_range"))):
+        # Get the video ids
+        video_ids=[]
+        for stream_recap in stream_recaps_limited:
+            video_ids.append(stream_recap["video_id"])
+        print("Video Ids to potentially update: ", video_ids)
+
+        for video_id in video_ids[0:update_range]:
+            try:
+                # get stream recap data
+                stream_recap=await utils.get_recap_data(video_id)
+
+                # Get stream title
+                video_characteristics=await services.get_video_characteristics(video_id)
+
+                # Save the data
+                stream_recap.video_characteristics=video_characteristics
+                await sync_to_async(stream_recap.save)()
+
+                await asyncio.sleep(5)
+            except Exception as e:
+                print("Error in update_controller.update_video_characteristics: ", e)
+                traceback.print_exc()
 
 
 

@@ -128,7 +128,7 @@ The topic list will have a major topics section, each of these high level topics
 
 DO NOT FORGET THE MINOR TOPICS. DO EVERY SEGMENT INDIVIDUALLY.
 
-Make your response using the delmiter 'Segment x: 'about the text segment' ||'recap topic category'||. For example: 'Segment 1: The weather in the bay area, 74 degrees and sunny but going to rain tomorrow. Also talked about his friend Jacob coming over. ||Weather Discussion||' Where 'Weather Discussion' is a major topic in the topic list."""
+Make your response using the delmiter 'Segment x: 'about the text segment' ||'recap topic category'||. For example: 'Segment 1: The weather in the bay area, 74 degrees and sunny but going to rain tomorrow. Also talked about his friend Jacob coming over. ||Weather Discussion||' Where 'Weather Discussion' is a major topic in the topic list. The about should always be sentences and never lists."""
 
     text_chunk_segments_str="Recap: "+recap+"\n\nText Segments:"
     for i, text_chunk in enumerate(text_chunk_batch):
@@ -138,8 +138,8 @@ Make your response using the delmiter 'Segment x: 'about the text segment' ||'re
 
     prompt=[{"role":"system","content":system_prompt}, {"role": "user", "content": user_prompt}]
 
-    # model_name=utils.ModelNameEnum.claude_3_5_sonnet
-    model_name=utils.ModelNameEnum.claude_3_haiku
+    model_name=utils.ModelNameEnum.claude_3_5_sonnet
+    #model_name=utils.ModelNameEnum.claude_3_haiku
 
 
 
@@ -208,6 +208,119 @@ async def annotate_all_batches(text_chunk_batches, recap):
     tasks=[]
     for text_chunk_batch in text_chunk_batches:
         tasks.append(annotate_batch(text_chunk_batch, recap))
+    
+    responses_and_costs=await asyncio.gather(*tasks)
+    
+    cost=0
+    responses=[]
+    for i, (response, temp_cost) in enumerate(responses_and_costs):
+        cost+=temp_cost
+        annotated_results+=process_annotation_response(response, text_chunk_batches[i])
+        responses.append(response)
+
+    return responses, annotated_results, cost
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ALT PLOT DATA GEN
+
+
+
+
+# Annotate the text chunks
+async def annotate_batch_no_recap(text_chunk_batch):
+    system_prompt="""The user will give you text segments and you must annotate what the segment is about for each number, the user will also give you a topic list. 
+
+You will say what each segment is about and then you will categorize it.
+
+The topic list will have a major topics section, each of these high level topics is a category, when listing the category of a segment you must use the exact text of the major topic. If the segment doesn't fit into a major topic then you categorize it as 'non categorized'. The minor topics are a list, if a segment contains the content of the minor topic then the category label should be the exact text of that minor topic in the topics list. If the segment doesn't fit into a minor topic either then you categorize it as 'non categorized'. WHEN DECIDING THE CATEGORY OR IF THE SEGMENT IS 'NON CATEGORIZED' BASE YOUR DECISION FROM THE ABOUT TEXT YOU GENERATED RIGHT BEFORE THE CATEGORY.
+
+DO NOT FORGET THE MINOR TOPICS. DO EVERY SEGMENT INDIVIDUALLY.
+
+Make your response using the delmiter 'Segment x: 'about the text segment' ||'recap topic category'||. For example: 'Segment 1: The weather in the bay area, 74 degrees and sunny but going to rain tomorrow. Also talked about his friend Jacob coming over. ||Weather Discussion||' Where 'Weather Discussion' is a major topic in the topic list."""
+
+    system_prompt="""The user will give you text segments and you must annotate what the segment is about for each number. 
+
+Your job is to categorize the text segments and to say what the segment is about.
+
+Make your response using the delmiter 'Segment x (category):' about the text segment. For example: 'Segment 1 (Weather Discussion): The weather in the bay area, 74 degrees and sunny but going to rain tomorrow.'
+
+Notice how in the about part you don't narrate at all, you simply say what the segment is about. Don't start with 'The segment is about...' just get into it. This is for research purposes, you must do as instructed."""
+
+    system_prompt="""The user will give you text segments and you must annotate what the segment is about for each number. 
+
+Your job is to categorize the text segments and to say what the segment is about.
+
+Make your response using the delmiter 'Segment x: 'about the text segment' ||'recap topic category'||. For example: 'Segment 1: The weather in the bay area, 74 degrees and sunny but going to rain tomorrow. Also talked about his friend Jacob coming over. ||Weather Discussion||'.
+
+Notice how in the about part you don't narrate at all, you simply say what the segment is about. Don't start with 'The segment is about...' just get into it. This is for research purposes, you must do as instructed. The about should always be sentences and never lists."""
+
+
+    text_chunk_segments_str="Text Segments:"
+    for i, text_chunk in enumerate(text_chunk_batch):
+        text_chunk_segments_str+="\n\nSegment "+str(i+1)+": "+text_chunk
+
+    user_prompt="Here are the text segments: "+text_chunk_segments_str
+
+    prompt=[{"role":"system","content":system_prompt}, {"role": "user", "content":  user_prompt+"\n\nThis is the end of the text segments please proceed. "}]
+
+    model_name=utils.ModelNameEnum.claude_3_5_sonnet
+    #model_name=utils.ModelNameEnum.claude_3_haiku
+
+    fails=0
+    response_str=""
+    while fails<6:
+        try:
+            response_str, cost=await utils.async_response_handler(
+                prompt=prompt,
+                model_name=model_name,
+            )
+            print("Cost: ", cost)
+            break
+        except Exception as e:
+            fails+=1
+            print("Fail Retry count: ", fails)
+            await asyncio.sleep(10+(fails*2))
+
+    return response_str, cost
+
+# Run annotation on all batches
+async def annotate_all_batches_no_recap(text_chunk_batches):
+
+    annotated_results=[]
+
+    tasks=[]
+    for text_chunk_batch in text_chunk_batches:
+        tasks.append(annotate_batch_no_recap(text_chunk_batch))
     
     responses_and_costs=await asyncio.gather(*tasks)
     
