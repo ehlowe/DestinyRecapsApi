@@ -72,6 +72,12 @@ async def download_video(video_id):#, output_folder, output_name):
             result = subprocess.run(command, check=True, capture_output=True, text=True)
         except Exception as e:
             pass
+
+        try:
+            print("Video Download Result:", result)
+        except Exception as e:
+            print("Video Download Error in print result:", e)
+
         time.sleep(2)
         print("Finished Downloading Video")
     
