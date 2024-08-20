@@ -51,7 +51,7 @@ class StreamRecapDataSerializer(serializers.ModelSerializer):
 
 # PAGE LOADING VIEWS
 async def get_all_recaps(request):
-    filled_meta_data = await utils.get_all_recaps_fast()
+    filled_meta_data = await utils.get_all_recaps_fast(channel_sort="Destiny")
     return JsonResponse(filled_meta_data, safe=False)
 
 async def get_linked_transcript(request):

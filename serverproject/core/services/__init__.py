@@ -16,7 +16,7 @@ from  .summaries import SummarizedSegmentGenerator
 
 from .recap import RecapGenerator
 
-from .misc import get_video_metadata, get_live_status
+from .misc import get_video_characteristics, get_live_status
 
 from .search import search, all_search
 
