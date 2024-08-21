@@ -4,6 +4,8 @@ from . import views
 urlpatterns = [
     # Page Loading Views
     path('recaps/', views.get_all_recaps),
+    path('weekly_recaps/', views.get_all_weekly_recaps),
+
     path('recap_details', views.get_recap_details, name='get_recap_details'),
     path('linked_transcript', views.get_linked_transcript, name='get_linked_transcript'),
     path('slow_recap_details', views.get_slow_recap_details, name='get_slow_recap_details'),

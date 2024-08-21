@@ -35,6 +35,8 @@ class auto_recap_controller:
         print("Writing to master vectordb")
         await services.vector_db_and_text_chunks.AllRecapsVectorDB.write_master_all()
 
+        await services.timeline_plot.weekly_controller.attempt_weekly_recap()
+
     @classmethod
     async def manual_run(self, video_ids):
         print("Starting Manual Auto Recap Controller for video ids: ", video_ids)
@@ -225,7 +227,10 @@ class update_controller:
         # await self.update_transcript_processing(stream_recaps_limited)
 
         # update the video_characteristics
-        await self.update_video_characteristics(stream_recaps_limited)
+        await self.update_video_characteristics(stream_recaps_limited, override=override)
+
+        print("Starting update_weekly_recaps")
+        await self.update_weekly_recaps()
     
     async def update_latest_plots(stream_recaps_limited, update_range=int(os.environ.get("update_range")), override=False):
         # Get the video ids
@@ -269,7 +274,7 @@ class update_controller:
                 print("Error in update_controller.update_process for transcript processing: ", e)
                 traceback.print_exc()
 
-    async def update_video_characteristics(stream_recaps_limited, update_range=int(os.environ.get("update_range"))):
+    async def update_video_characteristics(stream_recaps_limited, update_range=int(os.environ.get("update_range")), override=False):
         # Get the video ids
         video_ids=[]
         for stream_recap in stream_recaps_limited:
@@ -282,7 +287,14 @@ class update_controller:
                 stream_recap=await utils.get_recap_data(video_id)
 
                 # Get stream title
-                video_characteristics=await services.get_video_characteristics(video_id)
+                if override:
+                    video_characteristics=await services.get_video_characteristics(video_id)
+                else:
+                    if video_characteristics.get("title", "")=="":
+                        video_characteristics=await services.get_video_characteristics(video_id)
+                    else:
+                        print("Video Characteristics already exist for: ", video_id)
+                        continue
 
                 # Save the data
                 stream_recap.video_characteristics=video_characteristics
@@ -293,6 +305,9 @@ class update_controller:
                 print("Error in update_controller.update_video_characteristics: ", e)
                 traceback.print_exc()
 
+
+    async def update_weekly_recaps():
+        await services.timeline_plot.weekly_controller.update_weekly_recaps()
 
 
 

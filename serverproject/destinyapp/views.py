@@ -69,6 +69,20 @@ async def get_slow_recap_details(request):
     recap_details=await utils.database_operations.get_slow_recap_details(video_id)
     return JsonResponse(recap_details, safe=False)
 
+# Weekly Recap Loading
+async def get_all_weekly_recaps(request):
+    weekly_recaps=await utils.database_operations.get_all_weekly_recaps()
+    return JsonResponse(weekly_recaps, safe=False)
+
+
+
+
+
+
+
+
+
+
 
 # Search View
 async def search(request):

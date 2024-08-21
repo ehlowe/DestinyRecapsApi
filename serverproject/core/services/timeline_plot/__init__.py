@@ -1,1 +1,1 @@
-from . import data_gen_old, data_plotting, weekly_recaps
+from . import data_gen_old, data_plotting, weekly_recaps, weekly_controller

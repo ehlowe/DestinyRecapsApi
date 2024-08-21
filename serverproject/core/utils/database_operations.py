@@ -2,7 +2,7 @@ from asgiref.sync import sync_to_async
 
 from django.core import serializers
 
-from destinyapp.models import StreamRecapData
+from destinyapp.models import StreamRecapData, WeeklyRecapData
 
 
 
@@ -97,6 +97,31 @@ async def get_all_recaps_fast(channel_sort=None):
 
     # Serialize the data
     serialized_data = await sync_to_async(lambda: LimitedRecapSerializer(all_recap_data, many=True).data)()
+
+    return serialized_data
+
+
+
+
+
+# Get all weekly recaps
+class WeeklyRecapSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WeeklyRecapData
+        # all fields
+        fields = '__all__'
+
+async def get_all_weekly_recaps():
+    # Fetch all metadata asynchronously
+    all_weekly_recap_data = await sync_to_async(
+        lambda: list(WeeklyRecapData.objects.all())
+    )()
+
+    # Serialize the data
+    serialized_data = await sync_to_async(lambda: WeeklyRecapSerializer(all_weekly_recap_data, many=True).data)()
+
+    # the serialized data has an attribute called applied_date which should be sorted by such that the most recent data is first
+    serialized_data.sort(key=lambda x: x['applied_date'], reverse=True)
 
     return serialized_data
 
@@ -202,3 +227,6 @@ def find_time_at_char_count(linked_transcript, character_count):
             
     time_seconds=find_nearest_time_at_character_count(transcript_soup_character_counter, character_count)
     return time_seconds
+
+
+

@@ -12,8 +12,11 @@ from core import utils
 from destinyapp.models import StreamRecapData
 
 async def run_week_recap(applied_date):
-    limited_recap_data=await utils.get_all_recaps_fast()
-    stream_rundowns, weeks_video_idss=await get_week_context_prompt(limited_recap_data, applied_date)
+    limited_recap_data=await utils.get_all_recaps_fast(channel_sort="Destiny")
+    stream_rundowns, weeks_video_ids, stream_date_dict, earliest_date=await get_week_context_prompt(limited_recap_data, applied_date)
+    if len(weeks_video_ids)==0:
+        print("No Streams Found In Past Week returning empty data")
+        return [], "", "", "", {}, earliest_date
 
     cost=0
     week_recap, temp_cost=await generate_week_recap(stream_rundowns)
@@ -24,6 +27,11 @@ async def run_week_recap(applied_date):
 
     week_image, temp_cost=await generate_week_image(stream_rundowns)
     cost+=temp_cost
+    print("Week Recap Cost: ", cost)
+
+    return weeks_video_ids, week_hook, week_recap, week_image, stream_date_dict, earliest_date
+
+
 
 
 
@@ -33,6 +41,8 @@ async def run_week_recap(applied_date):
 
 
 async def get_week_context_prompt(limited_recap_data, applied_date):
+    stream_dates=[]
+
     earliest_stream_in_zone=applied_date-datetime.timedelta(days=7)
     stream_date_dict={}
     weeks_video_ids=[]
@@ -67,7 +77,11 @@ async def get_week_context_prompt(limited_recap_data, applied_date):
             full_stream_recap_datas.append(stream_recap_data)
         except Exception as e:
             pass
-    return stream_rundowns, weeks_video_ids
+
+    for key, value in stream_date_dict.items():
+        stream_date_dict[key]=value.strftime("%m/%d/%Y")
+    
+    return stream_rundowns, weeks_video_ids, stream_date_dict, earliest_stream_in_zone
 
 
 def get_stream_rundown(full_recap, stream_date_dict):

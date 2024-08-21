@@ -20,4 +20,4 @@ from .api_requests import ModelNameEnum, async_response_handler, generate_image
 
 # Database related utils
 from . import database_operations
-from .database_operations import save_data, get_recap_data, get_all_recaps, get_all_recaps_fast, get_plain_transcript, delete_stream_recap_data
+from .database_operations import save_data, get_recap_data, get_all_recaps, get_all_recaps_fast, get_all_weekly_recaps, get_plain_transcript, delete_stream_recap_data
