@@ -86,14 +86,13 @@ async def get_all_recaps_fast(channel_sort=None):
 
     # pop out the recaps where video_characteristics["channel"] is not empty or None
     if channel_sort:
-        for i in range(len(all_recap_data)):
-            if channel_sort:
-                try:
-                    channel=all_recap_data[i].video_characteristics.get("channel","")
-                    if (channel!="") and (channel!=channel_sort):
-                        all_recap_data.pop(i)
-                except Exception as e:
-                    pass
+        for i in range(len(all_recap_data)-1,-1,-1):
+            try:
+                channel=all_recap_data[i].video_characteristics.get("channel","")
+                if (channel!="") and (channel!=channel_sort):
+                    all_recap_data.pop(i)
+            except Exception as e:
+                print("Error removing recaps: ", e)
 
     # Serialize the data
     serialized_data = await sync_to_async(lambda: LimitedRecapSerializer(all_recap_data, many=True).data)()

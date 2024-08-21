@@ -226,8 +226,8 @@ class update_controller:
         # # Update the transcript processing
         # await self.update_transcript_processing(stream_recaps_limited)
 
-        # update the video_characteristics
-        await self.update_video_characteristics(stream_recaps_limited, override=override)
+        # # update the video_characteristics
+        # await self.update_video_characteristics(stream_recaps_limited, override=override)
 
         print("Starting update_weekly_recaps")
         await self.update_weekly_recaps()
