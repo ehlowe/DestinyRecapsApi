@@ -14,7 +14,7 @@ from destinyapp.models import StreamRecapData
 async def run_week_recap(applied_date):
     limited_recap_data=await utils.get_all_recaps_fast(channel_sort="Destiny")
     stream_rundowns, weeks_video_ids, stream_date_dict, earliest_date=await get_week_context_prompt(limited_recap_data, applied_date)
-    if len(weeks_video_ids)==0:
+    if len(weeks_video_ids)==0 or stream_rundowns=="":
         print("No Streams Found In Past Week returning empty data")
         return [], "", "", "", {}, earliest_date
 
@@ -85,15 +85,28 @@ async def get_week_context_prompt(limited_recap_data, applied_date):
 
 
 def get_stream_rundown(full_recap, stream_date_dict):
-    abstractions=full_recap.plot_object["abstractions"]
-    stream_rundown="Stream Title: "+full_recap.video_characteristics["title"]+"\nStream Date: "+stream_date_dict[full_recap.video_id].strftime("%A")+"\nTOPICS PROPORTION AND CONTENT:\n"
-    abstraction_rundowns=""
-    for key, value in abstractions.items():
-        if key!="non categorized":
-            abstraction_rundown="   Topic: "+key+" | Relative Proportion: "+str(int(value["size"]*100))+"%\nCONTENT: "+value["recap"]
-            abstraction_rundowns+=abstraction_rundown+"\n\n"
+    try:
+        stream_rundown="Stream Title: "+full_recap.video_characteristics["title"]+"\nStream Date: "+stream_date_dict[full_recap.video_id].strftime("%A")+"\nTOPICS PROPORTION AND CONTENT:\n"
+    except:
+        stream_rundown="TOPICS PROPORTION AND CONTENT:\n"
 
-    stream_rundown+=abstraction_rundowns
+    try:
+        abstractions=full_recap.plot_object["abstractions"]
+        abstraction_rundowns=""
+        for key, value in abstractions.items():
+            if key!="non categorized":
+                abstraction_rundown="   Topic: "+key+" | Relative Proportion: "+str(int(value["size"]*100))+"%\nCONTENT: "+value["recap"]
+                abstraction_rundowns+=abstraction_rundown+"\n\n"
+
+        stream_rundown+=abstraction_rundowns
+
+    except Exception as e:
+        if full_recap.recap!="":
+            stream_rundown+=full_recap.recap
+        else:
+            return ""
+
+
     return stream_rundown
 
 

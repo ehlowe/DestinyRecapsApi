@@ -52,6 +52,7 @@ async def update_weekly_recaps():
             applied_date=applied_date-datetime.timedelta(days=1)
             search_result = await sync_to_async(WeeklyRecapData.objects.filter)(applied_date=applied_date.strftime("%m/%d/%Y"))
             exists = await sync_to_async(search_result.exists)()
+            exists=False
 
             if exists:
                 print("Weekly Recap Already Exists")
