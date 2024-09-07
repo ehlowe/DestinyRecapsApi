@@ -322,7 +322,7 @@ async def read_and_process_youtube_transcript(video_id):
 def sub_time_to_milliseconds(sub_t_time):
     if type(sub_t_time)!=list:
         sub_t_time=list(sub_t_time)
-    return (sub_t_time[0]*3600*1000+sub_t_time[1]*60*1000+sub_t_time[2]*1000+sub_t_time[3])
+    return (sub_t_time[0]*3600*1000+sub_t_time[1]*60*1000+sub_t_time[2]*1000+sub_t_time[3])//1000
 
 
 def process_youtube_subs(subs):
