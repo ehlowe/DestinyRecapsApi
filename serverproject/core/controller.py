@@ -397,10 +397,8 @@ class FastPlotController:
         times.append({"start":t_start})
 
         # Get Transcript
-        raw_transcript=YouTubeTranscriptApi.get_transcript(video_id)
-        with open("raw_transcript.json", "w") as f:
-            json.dump(raw_transcript, f)
-
+        await services.video_and_transcript.download_youtube_transcript(video_id)
+        raw_transcript=await services.video_and_transcript.read_and_process_youtube_transcript(video_id)
         transcript, linked_transcript=services.fast.transcript_processing.process_yt_transcript(raw_transcript, video_id)
         if (len(utils.api_requests.enc.encode(transcript)))>(120*1000):
             raise Exception("Transcript too long")

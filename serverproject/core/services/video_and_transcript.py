@@ -270,3 +270,81 @@ async def process_raw_transcript(input_raw_transcript, video_id):
         new_lines+=2
     
     return transcript, linked_transcript
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Youtube Transcript Downloader
+import subprocess
+import pysrt
+
+async def download_youtube_transcript(video_id):
+    def download_yt_transcript_thread(video_id):
+        folder_path="destinyapp/working_folder/transcripts/"
+        output_path=folder_path+str(video_id)+'_transcript.%(ext)s'
+        command=['yt-dlp', '--skip-download', '--write-auto-sub', '--sub-lang','en','-o', output_path, '--verbose', '--username', 'oauth2', '--password', '""', '--convert-subs', 'srt', 'https://www.youtube.com/watch?v='+video_id]
+        try: 
+            result = subprocess.run(command, check=True, capture_output=True, text=True)
+        except Exception as e:
+            print("Error in download_youtube_transcript:", e)
+    
+    await asyncio.to_thread(download_yt_transcript_thread, video_id)
+    print("download thread closed")
+
+
+
+async def read_and_process_youtube_transcript(video_id):
+    folder_path="destinyapp/working_folder/transcripts/"
+    file_path=folder_path+str(video_id)+'_transcript.en.srt'
+    print(os.getcwd())
+    subs=pysrt.open(file_path)
+    raw_transcript=process_youtube_subs(subs)
+    return raw_transcript
+
+
+
+def sub_time_to_milliseconds(sub_t_time):
+    if type(sub_t_time)!=list:
+        sub_t_time=list(sub_t_time)
+    return (sub_t_time[0]*3600*1000+sub_t_time[1]*60*1000+sub_t_time[2]*1000+sub_t_time[3])
+
+
+def process_youtube_subs(subs):
+    sub_data_processed=[]
+    for i in range(len(subs)):
+        temp_texts=(subs[i].text).split('\n')
+        # for j in range(len(temp_texts)):
+        #     print(str(i)+"."+lets[j], temp_texts[j])
+        # print()
+
+        prev_texts=subs[i-1].text.split('\n') if i>0 else None
+        prev_start=subs[i-1].start if i>0 else [0,0,0,0]
+        if (prev_texts) and (prev_texts[-1]==temp_texts[0]):
+            if len(temp_texts)>1:
+                sub_data_processed.append({"text":temp_texts[1], "start":sub_time_to_milliseconds(subs[i].end),"duration":sub_time_to_milliseconds(subs[i].duration)})
+            continue
+        else:
+            sub_data_processed.append({"text":subs[i].text, "start":sub_time_to_milliseconds(subs[i].start),"duration":sub_time_to_milliseconds(subs[i].duration)})
+
+    raw_transcript=[]
+    for d in sub_data_processed:
+        if (d["text"].strip()!=""):
+            raw_transcript.append(d)
+
+    return raw_transcript
