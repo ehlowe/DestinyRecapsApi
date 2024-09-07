@@ -69,6 +69,23 @@ async def get_slow_recap_details(request):
     recap_details=await utils.database_operations.get_slow_recap_details(video_id)
     return JsonResponse(recap_details, safe=False)
 
+
+
+# FAST RECAPS
+async def fast_recap_request(request):
+
+    video_id=request.GET.get("video_id")
+    print(video_id)
+    try:
+        fast_recap_data=await controller.FastPlotController.return_plot(video_id)
+        fast_recap_data_serialized=await sync_to_async(lambda: utils.database_operations.FastRecapSerializer(fast_recap_data).data)()
+        return JsonResponse(fast_recap_data_serialized, safe=False)
+    except Exception as e:
+        print(e)
+        traceback.print_exc()
+        return JsonResponse({"status":"fast recap request failed"}, safe=False)
+
+
 # Weekly Recap Loading
 async def get_all_weekly_recaps(request):
     weekly_recaps=await utils.database_operations.get_all_weekly_recaps()

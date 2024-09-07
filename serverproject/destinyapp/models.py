@@ -55,6 +55,10 @@ class StreamRecapData(models.Model):
         return data_str
         
 
+class FastRecapData(models.Model):
+    video_id = models.CharField(max_length=100)
+    plot_object = models.JSONField(default=dict)
+
         
 class WeeklyRecapData(models.Model):
     applied_date = models.CharField(max_length=1000, default="")

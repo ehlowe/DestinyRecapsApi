@@ -48,7 +48,10 @@ def create_topic_color_dict(major_topics):
         "olive",
     ]
     for i, mt in enumerate(major_topics):
-        color_dict[mt]=major_topic_color_list[i]
+        if i>=len(major_topic_color_list):
+            color_dict[mt]="gray"
+        else:
+            color_dict[mt]=major_topic_color_list[i]
 
     return color_dict
 
@@ -364,9 +367,11 @@ async def create_plot_object(plot_segments, category_locations, video_id):
 
     last_x=abstraction_width_cutoff-between_circle_padding
 
+    print(len(list(plot_object.abstractions.keys())))
     for i, category in enumerate(list(category_locations.keys())):
         if category=="non categorized":
             continue
+        print(category)
         plot_object.abstractions[category].x=last_x+(plot_object.abstractions[category].size/2)+between_circle_padding
 
         last_x=plot_object.abstractions[category].x+(plot_object.abstractions[category].size/2)

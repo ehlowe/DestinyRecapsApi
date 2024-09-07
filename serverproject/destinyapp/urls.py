@@ -31,4 +31,10 @@ urlpatterns = [
     # save png
     path('save_png', views.SaveImageView.as_view(), name='save_png'),
 
+
+
+
+    # FastRecaps views
+    path('fast_recap', views.fast_recap_request, name='get_fast_recap'),
+
 ]

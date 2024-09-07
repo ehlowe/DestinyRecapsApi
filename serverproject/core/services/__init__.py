@@ -26,6 +26,8 @@ from . import timeline_plot
 
 from . import stream_plot
 
+from . import fast
+
 # from . import stream_plot_controller
 from . import timeline_plot# import data_gen
 from . import RV

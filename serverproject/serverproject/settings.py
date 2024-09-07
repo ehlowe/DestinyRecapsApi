@@ -76,6 +76,7 @@ INSTALLED_APPS = [
     "django_extensions",
     "destinyapp",
     'corsheaders',
+    'channels',
     # 'rest_framework',
     # 'django_q',
 ]

@@ -4,6 +4,8 @@ import openai
 from openai import AsyncOpenAI
 import anthropic
 from anthropic import AsyncAnthropic
+
+
 import assemblyai as aai
 openai_client=openai.OpenAI(api_key=os.environ.get("openai",""))
 async_openai_client=AsyncOpenAI(api_key=os.environ.get("openai",""))
@@ -11,6 +13,9 @@ anthropic_client=anthropic.Anthropic(api_key=os.environ.get("anthropic",""))
 async_anthropic_client=AsyncAnthropic(api_key=os.environ.get("anthropic",""))
 os.environ["REPLICATE_API_TOKEN"]=os.environ.get("replicate","")
 aai.settings.api_key=os.environ.get("assemblyai","")
+
+from groq import AsyncGroq
+groq_client=AsyncGroq(api_key=os.environ.get("GROQ_API_KEY"))
 
 
 # Api related utils

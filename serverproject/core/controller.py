@@ -1,10 +1,12 @@
 import time
 import os
 from dataclasses import dataclass, asdict, is_dataclass
-from destinyapp.models import StreamRecapData
+from destinyapp.models import StreamRecapData, FastRecapData
 import asyncio
 from asgiref.sync import sync_to_async, async_to_sync
 import traceback
+from django.http import StreamingHttpResponse, JsonResponse
+
 
 # from .core import services
 # from .core import utils
@@ -321,6 +323,10 @@ class update_controller:
 
 
 
+import json
+from youtube_transcript_api import YouTubeTranscriptApi
+from dataclasses import asdict
+
 
 
 class StreamPlotController:
@@ -345,3 +351,137 @@ class StreamPlotController:
         await services.stream_plot.visit_until_image_saved(video_id)
 
         print("Plotting Process Cost: ", cost)
+
+
+
+
+class FastPlotController:
+    @classmethod
+    async def return_plot(self, video_id):
+        # if a plot exists, return it, otherwise generate it
+        fast_recap_filter=await sync_to_async(FastRecapData.objects.filter)(video_id=video_id)
+        fast_recap_data=await sync_to_async(fast_recap_filter.first)()
+        if fast_recap_data!=None:
+            return fast_recap_data
+        else:
+            fast_recap_data=FastRecapData(video_id=video_id)
+            await sync_to_async(fast_recap_data.save)()
+
+            try:
+                plot_object = await self.run(video_id)
+                fast_recap_data.plot_object=asdict(plot_object)
+                plot_parameters=fast_recap_data.plot_object["plot_parameters"]
+                await sync_to_async(fast_recap_data.save)()
+            except Exception as e:
+                print("Error in FastPlotController.return_plot: ", e)
+                traceback.print_exc()
+                return None
+            return fast_recap_data
+
+    @classmethod
+    async def run(self, video_id):
+        cost=0
+
+        # # For testing
+        # if not os.path.exists("raw_transcript.json"):
+        #     raw_transcript=YouTubeTranscriptApi.get_transcript(video_id)
+        #     with open("raw_transcript.json", "w") as f:
+        #         json.dump(raw_transcript, f)
+        # else:
+        #     with open("raw_transcript.json", "r") as f:
+        #         raw_transcript=json.load(f)
+
+
+        times=[]
+        t_start=time.time()
+        times.append({"start":t_start})
+
+        # Get Transcript
+        raw_transcript=YouTubeTranscriptApi.get_transcript(video_id)
+        with open("raw_transcript.json", "w") as f:
+            json.dump(raw_transcript, f)
+
+        transcript, linked_transcript=services.fast.transcript_processing.process_yt_transcript(raw_transcript, video_id)
+        if (len(utils.api_requests.enc.encode(transcript)))>(120*1000):
+            raise Exception("Transcript too long")
+        t_transcript=time.time()
+        times.append({"transcript":t_transcript})
+
+
+        # Make Topics
+        topics_str, major_topics, temp_cost=await services.fast.data_gen.create_topics(transcript)
+        cost+=temp_cost
+        t_topics=time.time()
+        times.append({"topics":t_topics})
+
+        # Annotate Text batches
+        text_chunks_no_overlap = await services.stream_plot.data_gen.create_text_chunks(transcript, 0)
+        text_chunk_batches = await services.stream_plot.data_gen.generate_text_chunk_batches(text_chunks_no_overlap)
+        responses, annotated_results, temp_cost = await services.fast.data_gen.annotate_all_batches(text_chunk_batches, topics_str)
+        cost+=temp_cost
+        t_annotations=time.time()
+        times.append({"annotations":t_annotations})
+
+                
+        # Create Plot
+        annotated_segments, category_locations = await services.stream_plot.data_processing.create_segments(linked_transcript, annotated_results, major_topics, transcript)
+        plot_segments=await services.stream_plot.data_processing.annotated_to_plot_segments(annotated_segments)
+        plot_object=await services.stream_plot.data_processing.create_plot_object(plot_segments, category_locations, video_id)
+        t_plot_object=time.time()
+        times.append({"plot_object":t_plot_object})
+
+        # Annotate Extra
+        plot_object, temp_cost=await services.stream_plot.extra_annotations.recap_segments(plot_object)
+        cost+=temp_cost
+        t_recap_segments=time.time()
+        times.append({"recap_segments":t_recap_segments})
+        plot_object, temp_cost=await services.stream_plot.extra_annotations.recap_abstractions(plot_object)
+        cost+=temp_cost
+        t_recap_abstractions=time.time()
+        times.append({"recap_abstractions":t_recap_abstractions})
+        
+
+        print("Created Fast Recap for video_id: ", video_id, " with cost: ", cost)
+
+        for i in range(1,len(times)):
+            print(list(times[i].keys())[0], ": ", list(times[i].values())[0]-list(times[i-1].values())[0])
+
+        print("Total Time: ", list(times[-1].values())[0]-list(times[0].values())[0])
+
+        # return plot
+        return plot_object
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# class StreamConsumer(AsyncHttpConsumer):
+#     async def handle(self, body):
+#         await self.send_headers(headers=[
+#             (b"Cache-Control", b"no-cache"),
+#             (b"Content-Type", b"text/event-stream"),
+#             (b"Transfer-Encoding", b"chunked"),
+#         ])
+
+#         for i in range(15):
+#             data = {"progress": i+1, "data": f"Some data {i+1}"}
+#             await self.send_body(f"data: {json.dumps(data)}\n\n".encode("utf-8"), more_body=True)
+#             await asyncio.sleep(1)  # Simulate async processing time
+
+#         await self.send_body(b"", more_body=False)

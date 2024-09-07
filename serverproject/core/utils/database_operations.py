@@ -186,6 +186,44 @@ async def get_plain_transcript(video_id):
 
 
 
+
+
+
+
+
+
+
+# load FastRecaps
+class FastRecapSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StreamRecapData
+        fields = ['video_id', 'plot_object']
+
+async def get_fastrecap(video_id):
+    fastrecap = await sync_to_async(lambda: StreamRecapData.objects.filter(video_id=video_id).values('video_id', 'plot_object').first())()
+    if fastrecap:
+        serializer = FastRecapSerializer(data=fastrecap)
+        await sync_to_async(serializer.is_valid)(raise_exception=True)
+        return serializer.validated_data
+    else:
+        return None
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 from bs4 import BeautifulSoup
 def find_time_at_char_count(linked_transcript, character_count):
     soup = BeautifulSoup(linked_transcript, 'html.parser')
