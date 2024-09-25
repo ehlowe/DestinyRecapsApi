@@ -6,7 +6,7 @@ import asyncio
 from asgiref.sync import sync_to_async, async_to_sync
 import traceback
 from django.http import StreamingHttpResponse, JsonResponse
-
+import json
 
 # from .core import services
 # from .core import utils
@@ -34,10 +34,10 @@ class auto_recap_controller:
             if discord_message_video_ids!=[]:
                 await self.send_discord_messages(discord_message_video_ids)
 
-        print("Writing to master vectordb")
-        await services.vector_db_and_text_chunks.AllRecapsVectorDB.write_master_all()
+        # print("Writing to master vectordb")
+        # await services.vector_db_and_text_chunks.AllRecapsVectorDB.write_master_all()
 
-        await services.timeline_plot.weekly_controller.attempt_weekly_recap()
+        #await services.timeline_plot.weekly_controller.attempt_weekly_recap()
 
     @classmethod
     async def manual_run(self, video_ids):
@@ -125,9 +125,13 @@ class auto_recap_controller:
         try:
             print("STARTING RECAP GENERATION FOR: ", video_id)
             # Get all transcript data
-            transcript, linked_transcript, raw_transcript_data=await self.produce_transcript_data(video_id)
+            # transcript, linked_transcript, raw_transcript_data=await self.produce_transcript_data(video_id)
+
 
             # Get all recap data
+            await services.video_and_transcript.download_youtube_transcript(video_id)
+            raw_transcript_data=await services.video_and_transcript.read_and_process_youtube_transcript(video_id)
+            transcript, linked_transcript=services.fast.transcript_processing.process_yt_transcript(raw_transcript_data, video_id)
             vectordb, text_chunks, segments_and_summaries, finalized_recap, video_characteristics=await self.produce_recap_data(video_id, transcript)
 
             # Save the data
@@ -400,6 +404,19 @@ class FastPlotController:
         await services.video_and_transcript.download_youtube_transcript(video_id)
         raw_transcript=await services.video_and_transcript.read_and_process_youtube_transcript(video_id)
         transcript, linked_transcript=services.fast.transcript_processing.process_yt_transcript(raw_transcript, video_id)
+        # if True:
+        #     print("IN TESTING MODE")
+        #     test_folder='destinyapp/working_folder/test_transcript/transcript.json'
+        #     with open(test_folder, 'r') as f:
+        #         data=json.load(f)
+        #     transcript, linked_transcript=tuple(data.values())
+        #     print(transcript, linked_transcript)
+        #     print("LOADED TEST TRANSCRIPT")
+
+
+
+
+
         if (len(utils.api_requests.enc.encode(transcript)))>(120*1000):
             raise Exception("Transcript too long")
         t_transcript=time.time()
